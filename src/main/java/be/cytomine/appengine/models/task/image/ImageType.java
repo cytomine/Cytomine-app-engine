@@ -62,7 +62,7 @@ public class ImageType extends Type {
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
         ImagePersistenceRepository imagePersistenceRepository = AppEngineApplicationContext.getBean(ImagePersistenceRepository.class);
-        String parameterName = provision.get("parameterName").asText();
+        String parameterName = provision.get("param_name").asText();
         byte[] value = null;
         try {
             value = provision.get("value").binaryValue();

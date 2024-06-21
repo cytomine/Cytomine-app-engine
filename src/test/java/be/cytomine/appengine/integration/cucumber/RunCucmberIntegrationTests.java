@@ -16,7 +16,7 @@ import org.springframework.test.context.ContextConfiguration;
         plugin = {"pretty" , "html:build/reports/tests/cucumber/cucmber-report.html"},
         features = {"src/test/resources"},
         glue = {"be.cytomine.appengine.integration.cucumber"}
-        ,tags = "not @Scheduler"
+        //,tags = "not @Scheduler"
 
 )
 @CucumberContextConfiguration

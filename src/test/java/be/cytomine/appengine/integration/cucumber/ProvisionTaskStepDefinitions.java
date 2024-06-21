@@ -13,6 +13,8 @@ import be.cytomine.appengine.models.task.enumeration.EnumerationPersistence;
 import be.cytomine.appengine.models.task.enumeration.EnumerationType;
 import be.cytomine.appengine.models.task.geometry.GeometryPersistence;
 import be.cytomine.appengine.models.task.geometry.GeometryType;
+import be.cytomine.appengine.models.task.image.ImagePersistence;
+import be.cytomine.appengine.models.task.image.ImageType;
 import be.cytomine.appengine.models.task.integer.IntegerPersistence;
 import be.cytomine.appengine.models.task.integer.IntegerType;
 import be.cytomine.appengine.models.task.number.NumberPersistence;
@@ -28,6 +30,7 @@ import be.cytomine.appengine.repositories.TypePersistenceRepository;
 import be.cytomine.appengine.repositories.bool.BooleanPersistenceRepository;
 import be.cytomine.appengine.repositories.enumeration.EnumerationPersistenceRepository;
 import be.cytomine.appengine.repositories.geometry.GeometryPersistenceRepository;
+import be.cytomine.appengine.repositories.image.ImagePersistenceRepository;
 import be.cytomine.appengine.repositories.integer.IntegerPersistenceRepository;
 import be.cytomine.appengine.repositories.number.NumberPersistenceRepository;
 import be.cytomine.appengine.repositories.string.StringPersistenceRepository;
@@ -97,6 +100,9 @@ public class ProvisionTaskStepDefinitions {
 
     @Autowired
     private StringPersistenceRepository stringProvisionRepository;
+
+    @Autowired
+    private ImagePersistenceRepository imageProvisionRepository;
 
     @Autowired
     private TypePersistenceRepository typePersistenceRepository;
@@ -203,6 +209,8 @@ public class ProvisionTaskStepDefinitions {
                     return !(((EnumerationType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
                 case "GeometryType":
                     return !(((GeometryType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
+                case "ImageType":
+                    return !(((ImageType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
                 default:
                     return false;
             }
@@ -269,6 +277,11 @@ public class ProvisionTaskStepDefinitions {
                 provision = new GeometryPersistence();
                 provision.setValueType(ValueType.GEOMETRY);
                 ((GeometryPersistence) provision).setValue(initialValue);
+                break;
+            case "ImageType":
+                provision = new ImagePersistence();
+                provision.setValueType(ValueType.IMAGE);
+                ((ImagePersistence) provision).setValue(initialValue.getBytes());
                 break;
         }
 
@@ -361,6 +374,9 @@ public class ProvisionTaskStepDefinitions {
                 break;
             case "GeometryType":
                 provision = geometryProvisionRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
+                break;
+            case "ImageType":
+                provision = imageProvisionRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
                 break;
         }
 
@@ -565,6 +581,8 @@ public class ProvisionTaskStepDefinitions {
                             return ((EnumerationType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
                         case "geometry":
                             return ((GeometryType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
+                        case "image":
+                            return ((ImageType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
                         default:
                             return false;
                     }
@@ -615,6 +633,10 @@ public class ProvisionTaskStepDefinitions {
             case "GeometryType":
                 provision = geometryProvisionRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
                 Assertions.assertEquals(((GeometryPersistence) provision).getValue(), newValue);
+                break;
+            case "ImageType":
+                provision = imageProvisionRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
+                Assertions.assertEquals(((ImagePersistence) provision).getValue(), newValue);
                 break;
         }
 

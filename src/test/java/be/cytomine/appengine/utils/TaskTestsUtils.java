@@ -17,6 +17,7 @@ import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.dto.inputs.task.types.bool.BooleanValue;
 import be.cytomine.appengine.dto.inputs.task.types.enumeration.EnumerationValue;
 import be.cytomine.appengine.dto.inputs.task.types.geometry.GeometryValue;
+import be.cytomine.appengine.dto.inputs.task.types.image.ImageValue;
 import be.cytomine.appengine.dto.inputs.task.types.integer.IntegerValue;
 import be.cytomine.appengine.dto.inputs.task.types.string.StringValue;
 import be.cytomine.appengine.models.BaseEntity;
@@ -100,6 +101,14 @@ public class TaskTestsUtils {
                     geometryValue.setValue((String) entity.get("value"));
                     parameterValues.add(geometryValue);
                     break;
+
+                case "image":
+                    ImageValue imageValue = new ImageValue();
+                    imageValue.setParam_name((String) entity.get("param_name"));
+                    imageValue.setTask_run_id(UUID.fromString((String) entity.get("task_run_id")));
+                    imageValue.setValue(((String) entity.get("value")).getBytes());
+                    parameterValues.add(imageValue);
+                    break;
             }
         }
 
@@ -138,6 +147,10 @@ public class TaskTestsUtils {
             case "GeometryType":
                 provision.setType(be.cytomine.appengine.dto.inputs.task.ParameterType.GEOMETRY);
                 provision.setValue(value);
+                break;
+            case "ImageType":
+                provision.setType(be.cytomine.appengine.dto.inputs.task.ParameterType.IMAGE);
+                provision.setValue(value.getBytes());
                 break;
         }
 
