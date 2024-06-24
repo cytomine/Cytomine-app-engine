@@ -159,19 +159,8 @@ public class TaskService {
                 // use type factory to generate the correct type
                 input.setType(TypeFactory.createType(inputValue));
                 // Set default value
-                switch (TypeFactory.getTypeId(inputValue.get("type"))) {
-                    case "boolean":
-                        input.setDefaultValue("false");
-                        break;
-                    case "integer":
-                        input.setDefaultValue("0");
-                        break;
-                    case "number":
-                        input.setDefaultValue("0.0");
-                        break;
-                    default:
-                        input.setDefaultValue("");
-                        break;
+                if (inputValue.get("default") != null) {
+                    input.setDefaultValue(inputValue.get("default").textValue());
                 }
 
                 inputs.add(input);
