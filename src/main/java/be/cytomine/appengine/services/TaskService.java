@@ -158,9 +158,24 @@ public class TaskService {
                 input.setDescription(inputValue.get("description").textValue());
                 // use type factory to generate the correct type
                 input.setType(TypeFactory.createType(inputValue));
+
                 // Set default value
-                if (inputValue.get("default") != null) {
-                    input.setDefaultValue(inputValue.get("default").textValue());
+                JsonNode defaultNode = inputValue.get("default");
+                if (defaultNode != null) {
+                    switch (defaultNode.getNodeType()) {
+                        case STRING:
+                            input.setDefaultValue(defaultNode.textValue());
+                            break;
+                        case BOOLEAN:
+                            input.setDefaultValue(Boolean.toString(defaultNode.booleanValue()));
+                            break;
+                        case NUMBER:
+                            input.setDefaultValue(defaultNode.numberValue().toString());
+                            break;
+                        default:
+                            input.setDefaultValue(defaultNode.toString());
+                            break;
+                    }
                 }
 
                 inputs.add(input);
