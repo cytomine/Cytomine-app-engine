@@ -28,12 +28,25 @@ public class TaskRunController {
         this.taskRunService = taskRunService;
     }
 
-    @PutMapping(value = "/task-runs/{run_id}/input-provisions/{param_name}")
+    @PutMapping(value = "/task-runs/{run_id}/input-provisions/{param_name}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(code = HttpStatus.OK)
-    public ResponseEntity<?> provision(@PathVariable String run_id, @PathVariable String param_name, @RequestBody JsonNode provision) throws ProvisioningException {
-        logger.info("/task-runs/{run_id}/input-provisions/{param_name} PUT");
+    public ResponseEntity<?> provisionJson(@PathVariable String run_id, @PathVariable String param_name, @RequestBody JsonNode provision) throws ProvisioningException {
+        logger.info("/task-runs/{run_id}/input-provisions/{param_name} JSON PUT");
         JsonNode provisioned = taskRunService.provisionRunParameter(provision, run_id);
-        logger.info("/task-runs/{run_id}/input-provisions/{param_name} PUT Ended");
+        logger.info("/task-runs/{run_id}/input-provisions/{param_name} JSON PUT Ended");
+        return ResponseEntity.ok(provisioned);
+    }
+
+    @PutMapping(value = "/task-runs/{run_id}/input-provisions/{param_name}", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @ResponseStatus(code = HttpStatus.OK)
+    public ResponseEntity<?> provisionOctetStream(
+        @PathVariable("run_id") String runId,
+        @PathVariable("param_name") String parameterName,
+        @RequestBody byte[] value
+    ) throws ProvisioningException {
+        logger.info("/task-runs/{run_id}/input-provisions/{param_name} BINARY PUT");
+        JsonNode provisioned = taskRunService.provisionRunParameter(parameterName, runId, value);
+        logger.info("/task-runs/{run_id}/input-provisions/{param_name} BINARY PUT Ended");
         return ResponseEntity.ok(provisioned);
     }
 
