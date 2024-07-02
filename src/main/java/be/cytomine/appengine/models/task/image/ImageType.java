@@ -10,6 +10,8 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import be.cytomine.appengine.dto.inputs.task.types.image.ImageTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.image.ImageValue;
+import be.cytomine.appengine.dto.responses.errors.ErrorCode;
+import be.cytomine.appengine.exceptions.TypeValidationException;
 import be.cytomine.appengine.handlers.FileData;
 import be.cytomine.appengine.models.task.Output;
 import be.cytomine.appengine.models.task.ParameterType;
@@ -17,6 +19,8 @@ import be.cytomine.appengine.models.task.Run;
 import be.cytomine.appengine.models.task.Type;
 import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
+import be.cytomine.appengine.models.task.image.formats.JPEGChecker;
+import be.cytomine.appengine.models.task.image.formats.PNGChecker;
 import be.cytomine.appengine.repositories.image.ImagePersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import jakarta.persistence.Column;
@@ -55,8 +59,18 @@ public class ImageType extends Type {
     }
 
     @Override
-    public void validate(Object valueObject) {
+    public void validate(Object valueObject) throws TypeValidationException {
+        if (!(valueObject instanceof byte[])) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_TYPE_ERROR);
+        }
 
+        byte[] value = (byte[]) valueObject;
+
+        PNGChecker pngChecker = new PNGChecker();
+        JPEGChecker jpegChecker = new JPEGChecker();
+        if (!pngChecker.checkSignature(value) && !jpegChecker.checkSignature(value)) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT);
+        }
     }
 
     @Override
