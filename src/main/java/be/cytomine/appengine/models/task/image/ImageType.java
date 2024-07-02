@@ -61,25 +61,20 @@ public class ImageType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
-        ImagePersistenceRepository imagePersistenceRepository = AppEngineApplicationContext.getBean(ImagePersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
-        byte[] value = null;
-        try {
-            value = provision.get("value").binaryValue();
-        } catch (IOException ignored) {}
+        ImagePersistenceRepository imagePersistenceRepository = AppEngineApplicationContext.getBean(ImagePersistenceRepository.class);
         ImagePersistence persistedProvision = imagePersistenceRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
-        if (persistedProvision == null) {
-            persistedProvision = new ImagePersistence();
-            persistedProvision.setParameterName(parameterName);
-            persistedProvision.setParameterType(ParameterType.INPUT);
-            persistedProvision.setRunId(runId);
-            persistedProvision.setValue(value);
-            persistedProvision.setValueType(ValueType.IMAGE);
-            imagePersistenceRepository.save(persistedProvision);
-        } else {
-            persistedProvision.setValue(value);
-            imagePersistenceRepository.saveAndFlush(persistedProvision);
+        if (persistedProvision != null) {
+            return;
         }
+
+        persistedProvision = new ImagePersistence();
+        persistedProvision.setParameterName(parameterName);
+        persistedProvision.setParameterType(ParameterType.INPUT);
+        persistedProvision.setRunId(runId);
+        persistedProvision.setValueType(ValueType.IMAGE);
+
+        imagePersistenceRepository.save(persistedProvision);
     }
 
     @Override
@@ -116,7 +111,6 @@ public class ImageType extends Type {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode provisionedParameter = mapper.createObjectNode();
         provisionedParameter.put("param_name", provision.get("param_name").asText());
-        provisionedParameter.put("value", provision.get("value"));
         provisionedParameter.put("task_run_id", String.valueOf(run.getId()));
         return provisionedParameter;
     }

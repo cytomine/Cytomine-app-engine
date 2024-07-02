@@ -20,7 +20,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.validation.constraints.NotNull;
-import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -36,32 +35,24 @@ import java.util.*;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-
 @Service
-@Slf4j
 public class TaskProvisioningService {
-    private final TaskRepository taskRepository;
-
     Logger logger = LoggerFactory.getLogger(TaskProvisioningService.class);
 
     private final TypePersistenceRepository typePersistenceRepository;
     private final RunRepository runRepository;
     private final FileStorageHandler fileStorageHandler;
-    private final TaskValidationService taskValidationService;
 
     private SchedulerHandler schedulerHandler;
     @Value("${storage.input.charset}")
     private String charset;
 
 
-    public TaskProvisioningService(SchedulerHandler schedulerHandler, RunRepository runRepository, FileStorageHandler fileStorageHandler, TaskValidationService taskValidationService, TypePersistenceRepository typePersistenceRepository,
-                                   TaskRepository taskRepository) {
+    public TaskProvisioningService(SchedulerHandler schedulerHandler, RunRepository runRepository, FileStorageHandler fileStorageHandler, TypePersistenceRepository typePersistenceRepository) {
         this.runRepository = runRepository;
         this.fileStorageHandler = fileStorageHandler;
-        this.taskValidationService = taskValidationService;
         this.typePersistenceRepository = typePersistenceRepository;
         this.schedulerHandler = schedulerHandler;
-        this.taskRepository = taskRepository;
     }
 
     public JsonNode provisionRunParameter(JsonNode provision, String runId) throws ProvisioningException {
@@ -135,7 +126,6 @@ public class TaskProvisioningService {
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode provision = mapper.createObjectNode();
         provision.put("param_name", parameterName);
-        provision.put("value", value);
 
         return getInputParameterType(parameterName, run).createTypedParameterResponse(provision, run);
     }
