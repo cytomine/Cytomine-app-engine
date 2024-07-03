@@ -3,9 +3,11 @@ package be.cytomine.appengine.models.task.image;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import be.cytomine.appengine.dto.inputs.task.types.image.ImageTypeConstraint;
@@ -19,8 +21,8 @@ import be.cytomine.appengine.models.task.Run;
 import be.cytomine.appengine.models.task.Type;
 import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
-import be.cytomine.appengine.models.task.image.formats.JPEGChecker;
-import be.cytomine.appengine.models.task.image.formats.PNGChecker;
+import be.cytomine.appengine.models.task.image.formats.SignatureChecker;
+import be.cytomine.appengine.models.task.image.formats.SignatureCheckerFactory;
 import be.cytomine.appengine.repositories.image.ImagePersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import jakarta.persistence.Column;
@@ -44,16 +46,21 @@ public class ImageType extends Type {
 
     private List<String> formats;
 
-    public void setConstraint(ImageTypeConstraint constraint, Long value) {
+    public void setConstraint(ImageTypeConstraint constraint, Object value) {
+        ArrayNode node = (ArrayNode) value;
+
         switch (constraint) {
+            case FORMATS:
+                this.setFormats(parse(node.toString()));
+                break;
             case MAX_FILE_SIZE:
-                this.setMaxFileSize(value);
+                this.setMaxFileSize(node.asLong());
                 break;
             case MAX_WIDTH:
-                this.setMaxWidth(value);
+                this.setMaxWidth(node.asLong());
                 break;
             case MAX_HEIGHT:
-                this.setMaxHeight(value);
+                this.setMaxHeight(node.asLong());
                 break;
         }
     }
@@ -66,9 +73,13 @@ public class ImageType extends Type {
 
         byte[] value = (byte[]) valueObject;
 
-        PNGChecker pngChecker = new PNGChecker();
-        JPEGChecker jpegChecker = new JPEGChecker();
-        if (!pngChecker.checkSignature(value) && !jpegChecker.checkSignature(value)) {
+        List<SignatureChecker> checkers = formats
+                .stream()
+                .map(SignatureCheckerFactory::getChecker)
+                .collect(Collectors.toList());
+
+        boolean isValid = checkers.isEmpty() || checkers.stream().anyMatch(checker -> checker.checkSignature(value));
+        if (!isValid) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT);
         }
     }

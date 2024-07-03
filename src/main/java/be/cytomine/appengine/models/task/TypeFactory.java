@@ -121,7 +121,7 @@ public class TypeFactory {
         Arrays.stream(ImageTypeConstraint.values())
             .map(ImageTypeConstraint::getStringKey)
             .filter(typeNode::has)
-            .forEach(key -> type.setConstraint(ImageTypeConstraint.getConstraint(key), typeNode.get(key).asLong()));
+            .forEach(key -> type.setConstraint(ImageTypeConstraint.getConstraint(key), typeNode.get(key)));
 
         return type;
     }

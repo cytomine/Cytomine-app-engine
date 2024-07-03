@@ -51,7 +51,7 @@ public class GeometryType extends Type {
      * @return The geometry
      * @throws ParseException
      */
-    public static Geometry parse(String input) throws ParseException {
+    public static Geometry parseGeometry(String input) throws ParseException {
         try {
             GeoJsonReader reader = new GeoJsonReader();
             Geometry geometry = reader.read(input);
@@ -75,7 +75,7 @@ public class GeometryType extends Type {
 
         Geometry geometry;
         try {
-            geometry = parse((String) valueObject);
+            geometry = parseGeometry((String) valueObject);
         } catch (ParseException e) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_GEOJSON_PROCESSING_ERROR);
         }

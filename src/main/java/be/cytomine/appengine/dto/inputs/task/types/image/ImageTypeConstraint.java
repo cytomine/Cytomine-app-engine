@@ -3,12 +3,15 @@ package be.cytomine.appengine.dto.inputs.task.types.image;
 import java.util.Arrays;
 
 public enum ImageTypeConstraint {
+    FORMATS,
     MAX_FILE_SIZE,
     MAX_WIDTH,
     MAX_HEIGHT;
 
     public String getStringKey() {
         switch (this) {
+            case FORMATS:
+                return "formats";
             case MAX_FILE_SIZE:
                 return "max_file_size";
             case MAX_WIDTH:

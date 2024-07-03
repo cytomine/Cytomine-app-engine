@@ -1,5 +1,5 @@
 package be.cytomine.appengine.models.task.image.formats;
 
-public abstract class SignatureChecker {
-    public abstract boolean checkSignature(byte[] file);
+public interface SignatureChecker {
+    boolean checkSignature(byte[] file);
 }

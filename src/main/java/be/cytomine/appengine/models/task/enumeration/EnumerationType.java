@@ -37,21 +37,6 @@ public class EnumerationType extends Type {
 
     private List<String> values;
 
-    /**
-     * Parse a string representation of a list of string to a list of strings
-     * 
-     * @param input The string representation of the list
-     * @return  The list of strings
-    */
-    public static List<String> parse(String input) {
-        ObjectMapper mapper = new ObjectMapper();
-        try {
-            return mapper.readValue(input, new TypeReference<List<String>>() {});
-        } catch (Exception e) {
-            return new ArrayList<>();
-        }
-    }
-
     public void setConstraint(EnumerationTypeConstraint constraint, String value) {
         switch (constraint) {
             case VALUES:
