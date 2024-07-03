@@ -30,6 +30,8 @@ public class ErrorDefinitions {
         codes.put(ErrorCode.INTERNAL_PARAMETER_GT_VALIDATION_ERROR, new MessageCode("APPE-internal-request-validation-error", "value must be greater than defined constraint"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_INVALID_GEOJSON, new MessageCode("APPE-internal-request-validation-error", "invalid GeoJSON object"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT, new MessageCode("APPE-internal-request-validation-error", "invalid image format"));
+        codes.put(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_HEIGHT, new MessageCode("APPE-internal-request-validation-error", "invalid image height"));
+        codes.put(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_WIDTH, new MessageCode("APPE-internal-request-validation-error", "invalid image width"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_LEQ_VALIDATION_ERROR, new MessageCode("APPE-internal-request-validation-error", "value must be less than or equal to defined constraint"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_LT_VALIDATION_ERROR, new MessageCode("APPE-internal-request-validation-error", "value must be less than defined constraint"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_MISSING_RADIUS_ERROR, new MessageCode("APPE-internal-request-validation-error", "missing radius parameter"));

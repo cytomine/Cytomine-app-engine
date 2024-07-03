@@ -21,8 +21,6 @@ import be.cytomine.appengine.models.task.Run;
 import be.cytomine.appengine.models.task.Type;
 import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
-import be.cytomine.appengine.models.task.image.formats.SignatureChecker;
-import be.cytomine.appengine.models.task.image.formats.SignatureCheckerFactory;
 import be.cytomine.appengine.repositories.image.ImagePersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import jakarta.persistence.Column;
@@ -39,10 +37,10 @@ public class ImageType extends Type {
     private Long maxFileSize;
 
     @Column(nullable = true)
-    private Long maxWidth;
+    private Integer maxWidth;
 
     @Column(nullable = true)
-    private Long maxHeight;
+    private Integer maxHeight;
 
     private List<String> formats;
 
@@ -57,10 +55,10 @@ public class ImageType extends Type {
                 this.setMaxFileSize(node.asLong());
                 break;
             case MAX_WIDTH:
-                this.setMaxWidth(node.asLong());
+                this.setMaxWidth(node.asInt());
                 break;
             case MAX_HEIGHT:
-                this.setMaxHeight(node.asLong());
+                this.setMaxHeight(node.asInt());
                 break;
         }
     }
@@ -73,14 +71,29 @@ public class ImageType extends Type {
 
         byte[] value = (byte[]) valueObject;
 
-        List<SignatureChecker> checkers = formats
+        List<ImageFormat> checkers = formats
                 .stream()
-                .map(SignatureCheckerFactory::getChecker)
+                .map(ImageFormatFactory::getFormat)
                 .collect(Collectors.toList());
 
-        boolean isValid = checkers.isEmpty() || checkers.stream().anyMatch(checker -> checker.checkSignature(value));
-        if (!isValid) {
+        ImageFormat format = checkers
+                .stream()
+                .filter(checker -> checker.checkSignature(value))
+                .findFirst()
+                .orElse(null);
+
+        if (format == null) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT);
+        }
+
+        List<Integer> dimension = format.getDimensions(value);
+
+        if (maxWidth != null && dimension.get(0) > maxWidth) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_WIDTH);
+        }
+
+        if (maxHeight != null && dimension.get(1) > maxHeight) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_HEIGHT);
         }
     }
 
