@@ -1,9 +1,14 @@
 package be.cytomine.appengine.models.task.image.formats;
 
+import java.awt.image.BufferedImage;
+import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
 import be.cytomine.appengine.models.task.image.ImageFormat;
+
+import org.apache.commons.imaging.bytesource.ByteSource;
+import org.apache.commons.imaging.formats.tiff.TiffImageParser;
 
 public class TIFFFormat implements ImageFormat {
 
@@ -36,7 +41,12 @@ public class TIFFFormat implements ImageFormat {
 
     @Override
     public List<Integer> getDimensions(byte[] file) {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'getDimensions'");
+        TiffImageParser parser = new TiffImageParser();
+        try {
+            BufferedImage image = parser.getBufferedImage(ByteSource.array(file), null);
+            return List.of(image.getWidth(), image.getHeight());
+        } catch (IOException e) {
+            return List.of();
+        }
     }
 }
