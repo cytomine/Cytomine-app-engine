@@ -29,6 +29,7 @@ public class ErrorDefinitions {
         codes.put(ErrorCode.INTERNAL_PARAMETER_GEQ_VALIDATION_ERROR, new MessageCode("APPE-internal-request-validation-error", "value must be greater than or equal to define constraint"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_GT_VALIDATION_ERROR, new MessageCode("APPE-internal-request-validation-error", "value must be greater than defined constraint"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_INVALID_GEOJSON, new MessageCode("APPE-internal-request-validation-error", "invalid GeoJSON object"));
+        codes.put(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE, new MessageCode("APPE-internal-request-validation-error", "invalid image"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT, new MessageCode("APPE-internal-request-validation-error", "invalid image format"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_HEIGHT, new MessageCode("APPE-internal-request-validation-error", "invalid image height"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE, new MessageCode("APPE-internal-request-validation-error", "invalid image size"));

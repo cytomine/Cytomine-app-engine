@@ -1,8 +1,8 @@
 package be.cytomine.appengine.models.task.image.formats;
 
+import java.awt.Dimension;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.List;
 
 import be.cytomine.appengine.models.task.image.ImageFormat;
 
@@ -23,7 +23,7 @@ public class PNGFormat implements ImageFormat {
     }
 
     @Override
-    public List<Integer> getDimensions(byte[] file) {
+    public Dimension getDimensions(byte[] file) {
         byte[] ihdrChunk = new byte[8];
         System.arraycopy(file, 8, ihdrChunk, 0, 8);
 
@@ -41,6 +41,11 @@ public class PNGFormat implements ImageFormat {
         Integer width = ByteBuffer.wrap(widthBytes).getInt();
         Integer height = ByteBuffer.wrap(heightBytes).getInt();
 
-        return List.of(width, height);
+        return new Dimension(width, height);
+    }
+
+    @Override
+    public boolean validate(byte[] file) {
+        return true;
     }
 }

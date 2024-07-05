@@ -1,14 +1,15 @@
 package be.cytomine.appengine.models.task.image.formats;
 
-import java.awt.image.BufferedImage;
+import java.awt.Dimension;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.List;
 
-import be.cytomine.appengine.models.task.image.ImageFormat;
-
-import org.apache.commons.imaging.bytesource.ByteSource;
+import org.apache.commons.imaging.ImagingException;
+import org.apache.commons.imaging.formats.tiff.TiffField;
+import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
 import org.apache.commons.imaging.formats.tiff.TiffImageParser;
+import be.cytomine.appengine.models.task.image.ImageFormat;
 
 public class TIFFFormat implements ImageFormat {
 
@@ -40,13 +41,50 @@ public class TIFFFormat implements ImageFormat {
     }
 
     @Override
-    public List<Integer> getDimensions(byte[] file) {
+    public Dimension getDimensions(byte[] file) {
         TiffImageParser parser = new TiffImageParser();
         try {
-            BufferedImage image = parser.getBufferedImage(ByteSource.array(file), null);
-            return List.of(image.getWidth(), image.getHeight());
+            return parser.getImageSize(file);
         } catch (IOException e) {
-            return List.of();
+            return null;
+        }
+    }
+
+    @Override
+    public boolean validate(byte[] file) {
+        return isPlanar(file);
+    }
+
+    public boolean isPlanar(byte[] file) {
+        TiffImageParser parser = new TiffImageParser();
+        TiffImageMetadata metadata = null;
+
+        try {
+            metadata = (TiffImageMetadata) parser.getMetadata(file);
+        } catch (IOException e) {
+            return false;
+        }
+
+        List<TiffField> fields = metadata.getAllFields();
+
+        TiffField samplesPerPixel = fields
+                .stream()
+                .filter(field -> field.getTagInfo().name.equals("SamplesPerPixel"))
+                .findFirst()
+                .orElse(null);
+
+        TiffField tileWidth = fields
+                .stream()
+                .filter(field -> field.getTagInfo().name.equals("TileWidth"))
+                .findFirst()
+                .orElse(null);
+
+        try {
+            boolean isRGB = samplesPerPixel.getIntValue() == 3;
+            boolean isTiled = tileWidth != null && tileWidth.getIntValue() != 0;
+            return isRGB && !isTiled;
+        } catch (ImagingException e) {
+            return false;
         }
     }
 }

@@ -1,5 +1,6 @@
 package be.cytomine.appengine.models.task.image;
 
+import java.awt.Dimension;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -84,13 +85,13 @@ public class ImageType extends Type {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT);
         }
 
-        List<Integer> dimension = format.getDimensions(value);
+        Dimension dimension = format.getDimensions(value);
 
-        if (maxWidth != null && dimension.get(0) > maxWidth) {
+        if (maxWidth != null && dimension.getWidth() > maxWidth) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_WIDTH);
         }
 
-        if (maxHeight != null && dimension.get(1) > maxHeight) {
+        if (maxHeight != null && dimension.getHeight() > maxHeight) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_HEIGHT);
         }
 
@@ -105,6 +106,11 @@ public class ImageType extends Type {
         Unit unit = new Unit(maxFileSize);
         if (value.length > unit.getBytes()) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE);
+        }
+
+        /* Additional specific type validation */
+        if (!format.validate(value)) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE);
         }
     }
 
