@@ -7,7 +7,6 @@ import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ArrayNode;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import be.cytomine.appengine.dto.inputs.task.types.image.ImageTypeConstraint;
@@ -23,6 +22,7 @@ import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.image.ImagePersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
+import be.cytomine.appengine.utils.units.Unit;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import lombok.Data;
@@ -34,7 +34,7 @@ import lombok.EqualsAndHashCode;
 public class ImageType extends Type {
 
     @Column(nullable = true)
-    private Long maxFileSize;
+    private String maxFileSize;
 
     @Column(nullable = true)
     private Integer maxWidth;
@@ -44,21 +44,19 @@ public class ImageType extends Type {
 
     private List<String> formats;
 
-    public void setConstraint(ImageTypeConstraint constraint, Object value) {
-        ArrayNode node = (ArrayNode) value;
-
+    public void setConstraint(ImageTypeConstraint constraint, JsonNode value) {
         switch (constraint) {
             case FORMATS:
-                this.setFormats(parse(node.toString()));
+                this.setFormats(parse(value.toString()));
                 break;
             case MAX_FILE_SIZE:
-                this.setMaxFileSize(node.asLong());
+                this.setMaxFileSize(value.asText());
                 break;
             case MAX_WIDTH:
-                this.setMaxWidth(node.asInt());
+                this.setMaxWidth(value.asInt());
                 break;
             case MAX_HEIGHT:
-                this.setMaxHeight(node.asInt());
+                this.setMaxHeight(value.asInt());
                 break;
         }
     }
@@ -94,6 +92,19 @@ public class ImageType extends Type {
 
         if (maxHeight != null && dimension.get(1) > maxHeight) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_HEIGHT);
+        }
+
+        if (maxFileSize.isBlank()) {
+            return;
+        }
+
+        if(!Unit.isValid(maxFileSize)) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE_FORMAT);
+        }
+
+        Unit unit = new Unit(maxFileSize);
+        if (value.length > unit.getBytes()) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE);
         }
     }
 
