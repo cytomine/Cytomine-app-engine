@@ -3,12 +3,14 @@ package be.cytomine.appengine.controllers;
 import be.cytomine.appengine.dto.inputs.task.*;
 import be.cytomine.appengine.exceptions.*;
 import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.models.task.image.ImageFormatFactory;
 import be.cytomine.appengine.services.TaskProvisioningService;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -16,6 +18,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
 import java.util.List;
+
 
 @RestController
 @RequestMapping(path = "${app-engine.api_prefix}${app-engine.api_version}/")
@@ -37,16 +40,23 @@ public class TaskRunController {
         return ResponseEntity.ok(provisioned);
     }
 
-    @PutMapping(value = "/task-runs/{run_id}/input-provisions/{param_name}", consumes = MediaType.APPLICATION_OCTET_STREAM_VALUE)
+    @PutMapping(value = "/task-runs/{run_id}/input-provisions/{param_name}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(code = HttpStatus.OK)
-    public ResponseEntity<?> provisionOctetStream(
+    public ResponseEntity<?> provisionImage(
         @PathVariable("run_id") String runId,
         @PathVariable("param_name") String parameterName,
-        @RequestBody byte[] value
-    ) throws ProvisioningException {
-        logger.info("/task-runs/{run_id}/input-provisions/{param_name} BINARY PUT");
-        JsonNode provisioned = taskRunService.provisionRunParameter(parameterName, runId, value);
-        logger.info("/task-runs/{run_id}/input-provisions/{param_name} BINARY PUT Ended");
+        @RequestParam("image") MultipartFile image
+    ) throws IOException, ProvisioningException {
+        logger.info("/task-runs/{run_id}/input-provisions/{param_name} Image PUT");
+        if (!ImageFormatFactory.SUPPORTED_FORMATS.contains(image.getContentType())) {
+            return ResponseEntity
+                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
+                .body("Only " + ImageFormatFactory.SUPPORTED_FORMATS.toString() + " formats are supported.");
+        }
+
+        JsonNode provisioned = taskRunService.provisionRunParameter(parameterName, runId, image.getBytes());
+        logger.info("/task-runs/{run_id}/input-provisions/{param_name} Image PUT Ended");
+
         return ResponseEntity.ok(provisioned);
     }
 
