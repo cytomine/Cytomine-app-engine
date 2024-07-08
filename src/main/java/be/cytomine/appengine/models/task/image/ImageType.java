@@ -26,6 +26,7 @@ import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import be.cytomine.appengine.utils.units.Unit;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
@@ -43,7 +44,11 @@ public class ImageType extends Type {
     @Column(nullable = true)
     private Integer maxHeight;
 
+    @Column(nullable = true)
     private List<String> formats;
+
+    @Transient
+    private ImageFormat format;
 
     public void setConstraint(ImageTypeConstraint constraint, JsonNode value) {
         switch (constraint) {
@@ -62,30 +67,33 @@ public class ImageType extends Type {
         }
     }
 
-    @Override
-    public void validate(Object valueObject) throws TypeValidationException {
-        if (!(valueObject instanceof byte[])) {
-            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_TYPE_ERROR);
+    private void validateImageFormat(byte[] file) throws TypeValidationException {
+        if (formats == null || formats.isEmpty()) {
+            this.format = ImageFormatFactory.getGenericFormat();
+            return;
         }
-
-        byte[] value = (byte[]) valueObject;
 
         List<ImageFormat> checkers = formats
                 .stream()
                 .map(ImageFormatFactory::getFormat)
                 .collect(Collectors.toList());
 
-        ImageFormat format = checkers
+        this.format = checkers
                 .stream()
-                .filter(checker -> checker.checkSignature(value))
+                .filter(checker -> checker.checkSignature(file))
                 .findFirst()
                 .orElse(null);
 
-        if (format == null) {
+        if (this.format == null) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT);
         }
+    }
 
-        Dimension dimension = format.getDimensions(value);
+    private void validateImageDimension(byte[] file) throws TypeValidationException {
+        Dimension dimension = format.getDimensions(file);
+        if (dimension == null) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_DIMENSION);
+        }
 
         if (maxWidth != null && dimension.getWidth() > maxWidth) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_WIDTH);
@@ -94,8 +102,10 @@ public class ImageType extends Type {
         if (maxHeight != null && dimension.getHeight() > maxHeight) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_HEIGHT);
         }
+    }
 
-        if (maxFileSize.isBlank()) {
+    private void validateImageSize(byte[] file) throws TypeValidationException {
+        if (maxFileSize == null) {
             return;
         }
 
@@ -104,12 +114,27 @@ public class ImageType extends Type {
         }
 
         Unit unit = new Unit(maxFileSize);
-        if (value.length > unit.getBytes()) {
+        if (file.length > unit.getBytes()) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE);
         }
+    }
+
+    @Override
+    public void validate(Object valueObject) throws TypeValidationException {
+        if (!(valueObject instanceof byte[])) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_TYPE_ERROR);
+        }
+
+        byte[] file = (byte[]) valueObject;
+
+        validateImageFormat(file);
+
+        validateImageDimension(file);
+
+        validateImageSize(file);
 
         /* Additional specific type validation */
-        if (!format.validate(value)) {
+        if (!format.validate(file)) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE);
         }
     }
