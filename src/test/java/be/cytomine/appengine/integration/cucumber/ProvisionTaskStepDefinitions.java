@@ -609,7 +609,7 @@ public class ProvisionTaskStepDefinitions {
     }
 
     @Then("the value of parameter {string} is updated to {string} in the database")
-    public void the_value_of_parameter_is_updated_to_in_the_database(String parameterName, String newValue) throws FileStorageException {
+    public void the_value_of_parameter_is_updated_to_in_the_database(String parameterName, String newValue) {
         Input input = persistedTask
                 .getInputs()
                 .stream()
