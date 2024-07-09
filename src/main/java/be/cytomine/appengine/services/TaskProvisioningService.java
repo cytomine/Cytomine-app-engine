@@ -207,6 +207,7 @@ public class TaskProvisioningService {
         inputForType.getType().persistProvision(provision, run.getId());
     }
 
+    @NotNull
     private void saveInDatabase(String parameterName, byte[] value, Run run) {
         Set<Input> inputs = run.getTask().getInputs();
         Input inputForType = inputs
