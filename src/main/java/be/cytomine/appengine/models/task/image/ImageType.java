@@ -90,6 +90,10 @@ public class ImageType extends Type {
     }
 
     private void validateImageDimension(byte[] file) throws TypeValidationException {
+        if (maxWidth == null && maxHeight == null) {
+            return;
+        }
+
         Dimension dimension = format.getDimensions(file);
         if (dimension == null) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_DIMENSION);
