@@ -3,14 +3,12 @@ package be.cytomine.appengine.controllers;
 import be.cytomine.appengine.dto.inputs.task.*;
 import be.cytomine.appengine.exceptions.*;
 import be.cytomine.appengine.handlers.FileData;
-import be.cytomine.appengine.models.task.image.ImageFormatFactory;
 import be.cytomine.appengine.services.TaskProvisioningService;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.HttpStatusCode;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
@@ -40,21 +38,19 @@ public class TaskRunController {
         return ResponseEntity.ok(provisioned);
     }
 
-    @PutMapping(value = "/task-runs/{run_id}/input-provisions/{param_name}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
+    @PutMapping(
+        value = "/task-runs/{run_id}/input-provisions/{param_name}",
+        consumes = {MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE, "image/tiff"}
+    )
     @ResponseStatus(code = HttpStatus.OK)
     public ResponseEntity<?> provisionImage(
         @PathVariable("run_id") String runId,
         @PathVariable("param_name") String parameterName,
-        @RequestParam("image") MultipartFile image
+        @RequestBody byte[] image
     ) throws IOException, ProvisioningException {
         logger.info("/task-runs/{run_id}/input-provisions/{param_name} Image PUT");
-        if (!ImageFormatFactory.SUPPORTED_FORMATS.contains(image.getContentType())) {
-            return ResponseEntity
-                .status(HttpStatus.UNSUPPORTED_MEDIA_TYPE)
-                .body("Only " + ImageFormatFactory.SUPPORTED_FORMATS.toString() + " formats are supported.");
-        }
 
-        JsonNode provisioned = taskRunService.provisionRunParameter(parameterName, runId, image.getBytes());
+        JsonNode provisioned = taskRunService.provisionRunParameter(parameterName, runId, image);
         logger.info("/task-runs/{run_id}/input-provisions/{param_name} Image PUT Ended");
 
         return ResponseEntity.ok(provisioned);
