@@ -84,12 +84,8 @@ public class TaskProvisioningService {
         logger.info("ProvisionParameter : saving provision in database...");
         saveInDatabase(provision, run);
         logger.info("ProvisionParameter : saved");
-        if (run.getTask().getInputs().size() == 1) {
-            changeStateToProvisioned(run);
-        }
 
         return getInputParameterType(provision, run).createTypedParameterResponse(provision, run);
-
     }
 
     public JsonNode provisionRunParameter(String parameterName, String runId, byte[] value) throws ProvisioningException {
@@ -119,9 +115,6 @@ public class TaskProvisioningService {
         logger.info("ProvisionParameter : saving provision in database...");
         saveInDatabase(parameterName, value, run);
         logger.info("ProvisionParameter : saved");
-        if (run.getTask().getInputs().size() == 1) {
-            changeStateToProvisioned(run);
-        }
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode provision = mapper.createObjectNode();
@@ -531,46 +524,67 @@ public class TaskProvisioningService {
         return parameterValues;
     }
 
-
     public StateAction updateRunState(String runId, State state) throws SchedulingException, ProvisioningException {
-        if (state.getDesired().equals(TaskRunState.RUNNING))
-            return run(runId);
-        // TODO : handle other state transitions here
-        // to safeguard against unknown state transition requests
-        AppEngineError error = ErrorBuilder.build(ErrorCode.UKNOWN_STATE);
-        throw new ProvisioningException(error);
+        logger.info("Update State: validating Run...");
+        Run run = getRunIfValid(runId);
+
+        return switch (state.getDesired()) {
+            case PROVISIONED -> updateToProvisioned(run);
+            case RUNNING -> run(run);
+            // to safeguard against unknown state transition requests
+            default -> throw new ProvisioningException(ErrorBuilder.build(ErrorCode.UKNOWN_STATE));
+        };
+    }
+
+    private StateAction createStateAction(Run run, TaskRunState state) {
+        StateAction action = new StateAction();
+        action.setStatus("success");
+
+        TaskDescription description = makeTaskDescription(run.getTask());
+        Resource resource = new Resource(description, run.getId(), state, new Date(), new Date(), new Date());
+        action.setResource(resource);
+
+        return action;
     }
 
     @NotNull
-    private StateAction run(String runId) throws ProvisioningException, SchedulingException {
+    private StateAction run(Run run) throws ProvisioningException, SchedulingException {
         logger.info("Running Task : scheduling...");
-        logger.info("Running Task : validating Run...");
-        Run run = getRunIfValid(runId);
         if (!run.getState().equals(TaskRunState.PROVISIONED)) {
             AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_NOT_PROVISIONED);
             throw new ProvisioningException(error);
         }
         logger.info("Running Task : valid run");
+
         logger.info("Running Task : contacting scheduler...");
         Schedule schedule = new Schedule();
         schedule.setRun(run);
         schedulerHandler.schedule(schedule);
         logger.info("Running Task : scheduling done");
-        // update the final state
 
+        // update the final state
         run.setState(TaskRunState.QUEUING);
         runRepository.saveAndFlush(run);
         logger.info("Running Task : updated Run state to QUEUING");
-        // return response
-        StateAction action = new StateAction();
 
-        action.setStatus("success");
-
-        TaskDescription description = makeTaskDescription(run.getTask());
-        Resource resource = new Resource(description, run.getId(), TaskRunState.QUEUING, new Date(), new Date(), new Date());
-        action.setResource(resource);
+        StateAction action = createStateAction(run, TaskRunState.QUEUING);
         logger.info("Running Task : scheduled");
+
         return action;
+    }
+
+    private StateAction updateToProvisioned(Run run) throws ProvisioningException {
+        logger.info("Provisioning: update state to PROVISIONED...");
+        if (!run.getState().equals(TaskRunState.CREATED)) {
+            AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_INVALID_TASK_RUN_STATE);
+            throw new ProvisioningException(error);
+        }
+
+        changeStateToProvisioned(run);
+
+        logger.info("Provisioning: state updated to PROVISIONED");
+
+        return createStateAction(run, TaskRunState.PROVISIONED);
     }
 
     public TaskDescription makeTaskDescription(Task task) {

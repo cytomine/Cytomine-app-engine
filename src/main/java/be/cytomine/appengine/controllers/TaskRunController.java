@@ -38,20 +38,17 @@ public class TaskRunController {
         return ResponseEntity.ok(provisioned);
     }
 
-    @PutMapping(
-        value = "/task-runs/{run_id}/input-provisions/{param_name}",
-        consumes = {MediaType.IMAGE_JPEG_VALUE, MediaType.IMAGE_PNG_VALUE, "image/tiff"}
-    )
+    @PutMapping(value = "/task-runs/{run_id}/input-provisions/{param_name}", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @ResponseStatus(code = HttpStatus.OK)
-    public ResponseEntity<?> provisionImage(
+    public ResponseEntity<?> provisionData(
         @PathVariable("run_id") String runId,
         @PathVariable("param_name") String parameterName,
-        @RequestBody byte[] image
+        @RequestParam("file") MultipartFile file
     ) throws IOException, ProvisioningException {
-        logger.info("/task-runs/{run_id}/input-provisions/{param_name} Image PUT");
+        logger.info("/task-runs/{run_id}/input-provisions/{param_name} File PUT");
 
-        JsonNode provisioned = taskRunService.provisionRunParameter(parameterName, runId, image);
-        logger.info("/task-runs/{run_id}/input-provisions/{param_name} Image PUT Ended");
+        JsonNode provisioned = taskRunService.provisionRunParameter(parameterName, runId, file.getBytes());
+        logger.info("/task-runs/{run_id}/input-provisions/{param_name} File PUT Ended");
 
         return ResponseEntity.ok(provisioned);
     }
