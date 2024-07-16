@@ -37,6 +37,15 @@ public class TaskOutputFactory {
             taskParameterType = new TaskParameterImageType(type.getId(), type.getFormats());
         }
 
-        return new TaskOutput(output.getId().toString(), output.getDefaultValue(), output.getName(), output.getDisplayName(), output.getDescription(), output.isOptional(), taskParameterType);
+        return new TaskOutput(
+            output.getId().toString(),
+            output.getDefaultValue(),
+            output.getName(),
+            output.getDisplayName(),
+            output.getDescription(),
+            output.isOptional(),
+            taskParameterType,
+            output.getDerivedFrom().getId().toString()
+        );
     }
 }
