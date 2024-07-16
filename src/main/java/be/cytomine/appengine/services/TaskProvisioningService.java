@@ -502,6 +502,29 @@ public class TaskProvisioningService {
         return inputList;
     }
 
+    public byte[] retrieveSingleRunIO(String runId, String parameterName, ParameterType type) throws ProvisioningException {
+        logger.info("Get IO file from storage: searching...");
+
+        String io = type.equals(ParameterType.INPUT) ? "inputs" : "outputs";
+        Storage storage = new Storage("task-run-" + io + "-" + runId);
+        FileData data = new FileData(parameterName, storage.getIdStorage());
+
+        logger.info("Get IO file from storage: read file " + parameterName + " from storage...");
+        try {
+            data = fileStorageHandler.readFile(data);
+        } catch (FileStorageException e) {
+            AppEngineError error = ErrorBuilder.buildParamRelatedError(
+                ErrorCode.STORAGE_READING_FILE_FAILED,
+                parameterName,
+                e.getMessage()
+            );
+            throw new ProvisioningException(error);
+        }
+
+        logger.info("Get IO file from storage: done");
+        return data.getFileData();
+    }
+
     private List<TaskRunParameterValue> buildTaskRunParameterValues(Run run, ParameterType type) {
         List<TaskRunParameterValue> parameterValues = new ArrayList<>();
         List<TypePersistence> results = typePersistenceRepository.findTypePersistenceByRunIdAndParameterType(run.getId(), type);

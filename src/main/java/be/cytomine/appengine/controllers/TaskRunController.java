@@ -3,6 +3,7 @@ package be.cytomine.appengine.controllers;
 import be.cytomine.appengine.dto.inputs.task.*;
 import be.cytomine.appengine.exceptions.*;
 import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.services.TaskProvisioningService;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.slf4j.Logger;
@@ -101,6 +102,30 @@ public class TaskRunController {
         List<TaskRunParameterValue> outputs = taskRunService.retrieveRunInputs(run_id);
         logger.info("/task-runs/{run_id}/inputs GET Ended");
         return new ResponseEntity<>(outputs, HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/task-runs/{run_id}/input/{parameter_name}")
+    @ResponseStatus(code = HttpStatus.OK)
+    public ResponseEntity<?> getInputRunParameter(
+        @PathVariable("run_id") String runId,
+        @PathVariable("parameter_name") String parameterName
+    ) throws ProvisioningException {
+        logger.info("/task-runs/{run_id}/input/{parameter_name} GET");
+        byte[] input = taskRunService.retrieveSingleRunIO(runId, parameterName, ParameterType.INPUT);
+        logger.info("/task-runs/{run_id}/input/{parameter_name} Ended");
+        return new ResponseEntity<>(input, HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/task-runs/{run_id}/output/{parameter_name}")
+    @ResponseStatus(code = HttpStatus.OK)
+    public ResponseEntity<?> getOutputRunParameter(
+        @PathVariable("run_id") String runId,
+        @PathVariable("parameter_name") String parameterName
+    ) throws ProvisioningException {
+        logger.info("/task-runs/{run_id}/output/{parameter_name} GET");
+        byte[] output = taskRunService.retrieveSingleRunIO(runId, parameterName, ParameterType.OUTPUT);
+        logger.info("/task-runs/{run_id}/output/{parameter_name} Ended");
+        return new ResponseEntity<>(output, HttpStatus.OK);
     }
 
     @GetMapping(value = "/task-runs/{run_id}/outputs")
