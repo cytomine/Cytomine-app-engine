@@ -124,9 +124,10 @@ public class EnumerationType extends Type {
     @Override
     public EnumerationValue buildTaskRunParameterValue(String output, UUID id, String outputName) {
         EnumerationValue enumerationValue = new EnumerationValue();
-        enumerationValue.setTask_run_id(id);
+        enumerationValue.setParameterName(outputName);
+        enumerationValue.setTaskRunId(id);
+        enumerationValue.setType(ValueType.ENUMERATION);
         enumerationValue.setValue(output);
-        enumerationValue.setParam_name(outputName);
         return enumerationValue;
     }
 
@@ -134,9 +135,10 @@ public class EnumerationType extends Type {
     public EnumerationValue buildTaskRunParameterValue(TypePersistence typePersistence) {
         EnumerationPersistence enumerationPersistence = (EnumerationPersistence) typePersistence;
         EnumerationValue enumerationValue = new EnumerationValue();
-        enumerationValue.setTask_run_id(enumerationPersistence.getRunId());
+        enumerationValue.setParameterName(enumerationPersistence.getParameterName());
+        enumerationValue.setTaskRunId(enumerationPersistence.getRunId());
+        enumerationValue.setType(ValueType.ENUMERATION);
         enumerationValue.setValue(enumerationPersistence.getValue());
-        enumerationValue.setParam_name(enumerationPersistence.getParameterName());
         return enumerationValue;
     }
 }

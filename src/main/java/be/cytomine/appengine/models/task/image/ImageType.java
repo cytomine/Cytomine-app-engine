@@ -202,9 +202,9 @@ public class ImageType extends Type {
     @Override
     public ImageValue buildTaskRunParameterValue(String output, UUID id, String outputName) {
         ImageValue imageValue = new ImageValue();
-        imageValue.setTask_run_id(id);
-        imageValue.setValue(output.getBytes());
-        imageValue.setParam_name(outputName);
+        imageValue.setParameterName(outputName);
+        imageValue.setTaskRunId(id);
+        imageValue.setType(ValueType.IMAGE);
         return imageValue;
     }
 
@@ -212,9 +212,9 @@ public class ImageType extends Type {
     public ImageValue buildTaskRunParameterValue(TypePersistence typePersistence) {
         ImagePersistence imagePersistence = (ImagePersistence) typePersistence;
         ImageValue imageValue = new ImageValue();
-        imageValue.setTask_run_id(imagePersistence.getRunId());
-        imageValue.setValue(imagePersistence.getValue());
-        imageValue.setParam_name(imagePersistence.getParameterName());
+        imageValue.setParameterName(imagePersistence.getParameterName());
+        imageValue.setTaskRunId(imagePersistence.getRunId());
+        imageValue.setType(ValueType.IMAGE);
         return imageValue;
     }
 }
