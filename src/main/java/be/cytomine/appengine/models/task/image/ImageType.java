@@ -165,19 +165,16 @@ public class ImageType extends Type {
     public void persistResult(Run run, Output currentOutput, String outputValue) {
         ImagePersistenceRepository imagePersistenceRepository = AppEngineApplicationContext.getBean(ImagePersistenceRepository.class);
         ImagePersistence result = imagePersistenceRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        if (result == null) {
-            result = new ImagePersistence();
-            result.setParameterType(ParameterType.OUTPUT);
-            result.setParameterName(currentOutput.getName());
-            result.setRunId(run.getId());
-            result.setValueType(ValueType.IMAGE);
-
-            try {
-                result.setValue(outputValue.getBytes());
-            } catch (Exception ignored) {}
-
-            imagePersistenceRepository.save(result);
+        if (result != null) {
+            return;
         }
+        result = new ImagePersistence();
+        result.setParameterType(ParameterType.OUTPUT);
+        result.setParameterName(currentOutput.getName());
+        result.setRunId(run.getId());
+        result.setValueType(ValueType.IMAGE);
+
+        imagePersistenceRepository.save(result);
     }
 
     @Override

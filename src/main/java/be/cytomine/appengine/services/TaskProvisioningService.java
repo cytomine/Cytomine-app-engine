@@ -401,15 +401,14 @@ public class TaskProvisioningService {
                 String outputName = currentOutput.getName();
                 byte[] rawOutput = multiPartFileZipInputStream.readNBytes((int) ze.getSize());
                 String output = new String(rawOutput, getStorageCharset(charset));
+
                 String trimmedOutput = output.trim();
                 // saving to database does not care about the type
                 saveOutput(run, currentOutput, trimmedOutput);
                 // saving to the storage does not care about the type
-                storeOutputInFileStorage(run, trimmedOutput, outputName);
+                storeOutputInFileStorage(run, rawOutput, outputName);
                 // based on parsed type build the response
                 taskRunParameterValues.add(currentOutput.getType().buildTaskRunParameterValue(trimmedOutput, run.getId(), outputName));
-
-
             }
 
             if (!remainingOutputs.isEmpty()) {
@@ -437,11 +436,10 @@ public class TaskProvisioningService {
         };
     }
 
-    private void storeOutputInFileStorage(Run run, String outputValue, String name) throws ProvisioningException {
+    private void storeOutputInFileStorage(Run run, byte[] outputValue, String name) throws ProvisioningException {
         logger.info("Posting Outputs Archive : storing in file storage...");
         Storage outputsStorage = new Storage("task-run-outputs-" + run.getId());
-        byte[] inputFileData = outputValue.getBytes(getStorageCharset(charset));
-        FileData outputFileData = new FileData(inputFileData, name);
+        FileData outputFileData = new FileData(outputValue, name);
         try {
             fileStorageHandler.createFile(outputsStorage, outputFileData);
         } catch (FileStorageException e) {
