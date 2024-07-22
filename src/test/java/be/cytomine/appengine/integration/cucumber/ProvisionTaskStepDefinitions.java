@@ -54,11 +54,15 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootContextLoader;
 import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
@@ -333,9 +337,18 @@ public class ProvisionTaskStepDefinitions {
         HttpEntity<?> entity = null;
         if (type.equals("image")) {
             HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.IMAGE_PNG);
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
 
-            entity = new HttpEntity<>(value.getBytes(), headers);
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            ByteArrayResource fileResource = new ByteArrayResource(value.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return "file.txt";
+                }
+            };
+            body.add("file", fileResource);
+
+            entity = new HttpEntity<>(body, headers);
         } else {
             ObjectMapper mapper = new ObjectMapper();
             ObjectNode jsonNode = mapper.valueToTree(
@@ -350,6 +363,8 @@ public class ProvisionTaskStepDefinitions {
 
         try {
             new RestTemplate().exchange(endpointUrl, HttpMethod.PUT, entity, JsonNode.class);
+            persistedRun.setState(TaskRunState.PROVISIONED);
+            persistedRun = taskRunRepository.saveAndFlush(persistedRun);
         } catch (RestClientResponseException e) {
             persistedException = e;
         }
@@ -622,27 +637,27 @@ public class ProvisionTaskStepDefinitions {
         switch (input.getType().getClass().getSimpleName()) {
             case "BooleanType":
                 provision = booleanProvisionRepository.findBooleanPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
-                Assertions.assertEquals(((BooleanPersistence) provision).isValue(), Boolean.parseBoolean(newValue));
+                Assertions.assertEquals(Boolean.parseBoolean(newValue), ((BooleanPersistence) provision).isValue());
                 break;
             case "IntegerType":
                 provision = integerProvisionRepository.findIntegerPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
-                Assertions.assertEquals(((IntegerPersistence) provision).getValue(), Integer.parseInt(newValue));
+                Assertions.assertEquals(Integer.parseInt(newValue), ((IntegerPersistence) provision).getValue());
                 break;
             case "NumberType":
                 provision = numberProvisionRepository.findNumberPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
-                Assertions.assertEquals(((NumberPersistence) provision).getValue(), Double.parseDouble(newValue));
+                Assertions.assertEquals(Double.parseDouble(newValue), ((NumberPersistence) provision).getValue());
                 break;
             case "StringType":
                 provision = stringProvisionRepository.findStringPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
-                Assertions.assertEquals(((StringPersistence) provision).getValue(), newValue);
+                Assertions.assertEquals(newValue, ((StringPersistence) provision).getValue());
                 break;
             case "EnumerationType":
                 provision = enumerationProvisionRepository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
-                Assertions.assertEquals(((EnumerationPersistence) provision).getValue(), newValue);
+                Assertions.assertEquals(newValue, ((EnumerationPersistence) provision).getValue());
                 break;
             case "GeometryType":
                 provision = geometryProvisionRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
-                Assertions.assertEquals(((GeometryPersistence) provision).getValue(), newValue);
+                Assertions.assertEquals(newValue, ((GeometryPersistence) provision).getValue());
                 break;
             case "ImageType":
                 provision = imageProvisionRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);

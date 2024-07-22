@@ -64,48 +64,48 @@ public class TaskTestsUtils {
             switch (value.getClass().getSimpleName().toLowerCase()) {
                 case "boolean":
                     BooleanValue booleanValue = new BooleanValue();
-                    booleanValue.setParam_name((String) entity.get("param_name"));
-                    booleanValue.setTask_run_id(UUID.fromString((String) entity.get("task_run_id")));
+                    booleanValue.setParameterName((String) entity.get("param_name"));
+                    booleanValue.setTaskRunId(UUID.fromString((String) entity.get("task_run_id")));
                     booleanValue.setValue((boolean) entity.get("value"));
                     parameterValues.add(booleanValue);
                     break;
 
                 case "integer":
                     IntegerValue integerValue = new IntegerValue();
-                    integerValue.setParam_name((String) entity.get("param_name"));
-                    integerValue.setTask_run_id(UUID.fromString((String) entity.get("task_run_id")));
+                    integerValue.setParameterName((String) entity.get("param_name"));
+                    integerValue.setTaskRunId(UUID.fromString((String) entity.get("task_run_id")));
                     integerValue.setValue((int) entity.get("value"));
                     parameterValues.add(integerValue);
                     break;
 
                 case "string":
                     StringValue stringValue = new StringValue();
-                    stringValue.setParam_name((String) entity.get("param_name"));
-                    stringValue.setTask_run_id(UUID.fromString((String) entity.get("task_run_id")));
+                    stringValue.setParameterName((String) entity.get("param_name"));
+                    stringValue.setTaskRunId(UUID.fromString((String) entity.get("task_run_id")));
                     stringValue.setValue((String) entity.get("value"));
                     parameterValues.add(stringValue);
                     break;
 
                 case "enumeration":
                     EnumerationValue enumerationValue = new EnumerationValue();
-                    enumerationValue.setParam_name((String) entity.get("param_name"));
-                    enumerationValue.setTask_run_id(UUID.fromString((String) entity.get("task_run_id")));
+                    enumerationValue.setParameterName((String) entity.get("param_name"));
+                    enumerationValue.setTaskRunId(UUID.fromString((String) entity.get("task_run_id")));
                     enumerationValue.setValue((String) entity.get("value"));
                     parameterValues.add(enumerationValue);
                     break;
 
                 case "geometry":
                     GeometryValue geometryValue = new GeometryValue();
-                    geometryValue.setParam_name((String) entity.get("param_name"));
-                    geometryValue.setTask_run_id(UUID.fromString((String) entity.get("task_run_id")));
+                    geometryValue.setParameterName((String) entity.get("param_name"));
+                    geometryValue.setTaskRunId(UUID.fromString((String) entity.get("task_run_id")));
                     geometryValue.setValue((String) entity.get("value"));
                     parameterValues.add(geometryValue);
                     break;
 
                 case "image":
                     ImageValue imageValue = new ImageValue();
-                    imageValue.setParam_name((String) entity.get("param_name"));
-                    imageValue.setTask_run_id(UUID.fromString((String) entity.get("task_run_id")));
+                    imageValue.setParameterName((String) entity.get("param_name"));
+                    imageValue.setTaskRunId(UUID.fromString((String) entity.get("task_run_id")));
                     imageValue.setValue(((String) entity.get("value")).getBytes());
                     parameterValues.add(imageValue);
                     break;
