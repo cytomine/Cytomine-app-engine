@@ -363,8 +363,6 @@ public class ProvisionTaskStepDefinitions {
 
         try {
             new RestTemplate().exchange(endpointUrl, HttpMethod.PUT, entity, JsonNode.class);
-            persistedRun.setState(TaskRunState.PROVISIONED);
-            persistedRun = taskRunRepository.saveAndFlush(persistedRun);
         } catch (RestClientResponseException e) {
             persistedException = e;
         }

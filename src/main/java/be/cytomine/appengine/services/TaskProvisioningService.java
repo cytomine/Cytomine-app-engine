@@ -85,6 +85,10 @@ public class TaskProvisioningService {
         saveInDatabase(provision, run);
         logger.info("ProvisionParameter : saved");
 
+        if (run.getTask().getInputs().size() == 1) {
+            changeStateToProvisioned(run);
+        }
+
         return getInputParameterType(provision, run).createTypedParameterResponse(provision, run);
     }
 
@@ -115,6 +119,10 @@ public class TaskProvisioningService {
         logger.info("ProvisionParameter : saving provision in database...");
         saveInDatabase(parameterName, value, run);
         logger.info("ProvisionParameter : saved");
+
+        if (run.getTask().getInputs().size() == 1) {
+            changeStateToProvisioned(run);
+        }
 
         ObjectMapper mapper = new ObjectMapper();
         ObjectNode provision = mapper.createObjectNode();
