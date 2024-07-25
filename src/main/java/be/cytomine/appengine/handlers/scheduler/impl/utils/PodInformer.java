@@ -7,9 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import io.fabric8.kubernetes.api.model.Pod;
-import io.fabric8.kubernetes.client.KubernetesClient;
-import io.fabric8.kubernetes.client.Watcher;
-import io.fabric8.kubernetes.client.WatcherException;
+import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
@@ -22,7 +20,7 @@ import be.cytomine.appengine.states.TaskRunState;
 @Slf4j
 @AllArgsConstructor
 @Component
-public class PodWatcher implements Watcher<Pod> {
+public class PodInformer implements ResourceEventHandler<Pod> {
 
     private static final Map<String, TaskRunState> STATUS = new HashMap<String, TaskRunState>() {{
         put("Pending", TaskRunState.PENDING);
@@ -34,51 +32,47 @@ public class PodWatcher implements Watcher<Pod> {
 
     private static final Set<TaskRunState> FINAL_STATES = Set.of(TaskRunState.FAILED, TaskRunState.FINISHED);
 
-    private final KubernetesClient kubernetesClient;
-
     private final RunRepository runRepository;
 
-    @Override
-    public void eventReceived(Action action, Pod pod) {
+    private Run getRun(Pod pod) {
         Map<String, String> labels = pod.getMetadata().getLabels();
 
         String runId = labels.get("runId");
         Optional<Run> runOptional = runRepository.findById(UUID.fromString(runId));
         if (runOptional.isEmpty()) {
             log.error("Pod Watcher: run {} is empty", runId);
-            return;
+            return null;
         }
 
-        Run run = runOptional.get();
+        return runOptional.get();
+    }
+
+    @Override
+    public void onAdd(Pod pod) {
+        Run run = getRun(pod);
         if (FINAL_STATES.contains(run.getState())) {
             return;
         }
 
-        log.info("Pod Watcher: pod " + pod.getMetadata().getName());
-        switch (action.name()) {
-            case "ADDED":
-                run.setState(TaskRunState.QUEUED);
-                break;
-            case "MODIFIED":
-                run.setState(STATUS.getOrDefault(pod.getStatus().getPhase(), TaskRunState.FAILED));
-                break;
-            default:
-                log.info("Unrecognized event: " + action.name());
-        }
-
+        run.setState(TaskRunState.QUEUED);
         run = runRepository.saveAndFlush(run);
-        log.info("Pod Watcher: updated Run state to " + run.getState());
+        log.info("Pod Informer: updated Run {} to {}", run.getId(), run.getState());
     }
 
     @Override
-    public void onClose(WatcherException cause) {
-        log.error("Watcher closed: " + cause.getMessage());
+    public void onUpdate(Pod oldPod, Pod newPod) {
+        Run run = getRun(newPod);
+        if (FINAL_STATES.contains(run.getState())) {
+            return;
+        }
 
-        log.info("Watcher: reconnecting...");
-        kubernetesClient
-            .pods()
-            .inNamespace("default")
-            .watch(this);
-        log.info("Watcher: reconnected");
+        run.setState(STATUS.getOrDefault(newPod.getStatus().getPhase(), TaskRunState.FAILED));
+        run = runRepository.saveAndFlush(run);
+        log.info("Pod Informer: updated Run {} to {}", run.getId(), run.getState());
+    }
+
+    @Override
+    public void onDelete(Pod pod, boolean deletedFinalStateUnknown) {
+        log.info("Pod Informer: Pod deleted");
     }
 }

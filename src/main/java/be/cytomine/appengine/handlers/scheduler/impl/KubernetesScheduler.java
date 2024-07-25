@@ -20,7 +20,7 @@ import org.springframework.core.env.Environment;
 import be.cytomine.appengine.dto.handlers.scheduler.Schedule;
 import be.cytomine.appengine.exceptions.SchedulingException;
 import be.cytomine.appengine.handlers.SchedulerHandler;
-import be.cytomine.appengine.handlers.scheduler.impl.utils.PodWatcher;
+import be.cytomine.appengine.handlers.scheduler.impl.utils.PodInformer;
 import be.cytomine.appengine.models.task.Run;
 import be.cytomine.appengine.models.task.Task;
 
@@ -34,7 +34,7 @@ public class KubernetesScheduler implements SchedulerHandler {
     private KubernetesClient kubernetesClient;
 
     @Autowired
-    private PodWatcher podWatcher;
+    private PodInformer podInformer;
 
     @Value("${app-engine.api_prefix}")
     private String apiPrefix;
@@ -224,17 +224,12 @@ public class KubernetesScheduler implements SchedulerHandler {
     @Override
     @PostConstruct
     public void monitor() throws SchedulingException {
-        log.info("Monitor: add watcher to the cluster");
-
-        try {
-            kubernetesClient
-                    .pods()
-                    .inNamespace("default")
-                    .watch(podWatcher);
-        } catch (KubernetesClientException e) {
-            throw new SchedulingException("Failed to add watcher to the cluster");
-        }
-
-        log.info("Monitor: watcher added");
+        log.info("Monitor: add informer to the cluster");
+        kubernetesClient
+            .pods()
+            .inNamespace("default")
+            .inform(podInformer)
+            .run();
+        log.info("Monitor: informer added");
     }
 }
