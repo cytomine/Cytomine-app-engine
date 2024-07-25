@@ -7,6 +7,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import io.fabric8.kubernetes.api.model.Pod;
+import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.Watcher;
 import io.fabric8.kubernetes.client.WatcherException;
 import lombok.AllArgsConstructor;
@@ -33,7 +34,9 @@ public class PodWatcher implements Watcher<Pod> {
 
     private static final Set<TaskRunState> FINAL_STATES = Set.of(TaskRunState.FAILED, TaskRunState.FINISHED);
 
-    private RunRepository runRepository;
+    private final KubernetesClient kubernetesClient;
+
+    private final RunRepository runRepository;
 
     @Override
     public void eventReceived(Action action, Pod pod) {
@@ -69,6 +72,13 @@ public class PodWatcher implements Watcher<Pod> {
 
     @Override
     public void onClose(WatcherException cause) {
-        log.info("Watcher closed: " + cause.getMessage());
+        log.error("Watcher closed: " + cause.getMessage());
+
+        log.info("Watcher: reconnecting...");
+        kubernetesClient
+            .pods()
+            .inNamespace("default")
+            .watch(this);
+        log.info("Watcher: reconnected");
     }
 }

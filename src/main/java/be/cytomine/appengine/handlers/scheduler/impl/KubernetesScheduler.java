@@ -234,5 +234,7 @@ public class KubernetesScheduler implements SchedulerHandler {
         } catch (KubernetesClientException e) {
             throw new SchedulingException("Failed to add watcher to the cluster");
         }
+
+        log.info("Monitor: watcher added");
     }
 }
