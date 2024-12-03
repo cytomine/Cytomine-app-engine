@@ -35,13 +35,13 @@ public class StringType extends Type {
     @Column(nullable = true)
     private Integer maxLength;
 
-    public void setConstraint(StringTypeConstraint constraint, String value) {
+    public void setConstraint(StringTypeConstraint constraint, Integer value) {
         switch (constraint) {
             case MIN_LENGTH:
-                this.setMinLength(Integer.parseInt(value));
+                this.setMinLength(value);
                 break;
             case MAX_LENGTH:
-                this.setMaxLength(Integer.parseInt(value));
+                this.setMaxLength(value);
                 break;
         }
     }
@@ -56,6 +56,10 @@ public class StringType extends Type {
 
     @Override
     public void validate(Object valueObject) throws TypeValidationException {
+        if (valueObject == null) {
+            return;
+        }
+
         String value = (String) valueObject;
 
         if (this.hasConstraint(StringTypeConstraint.MIN_LENGTH) && value.length() < this.getMinLength()) {

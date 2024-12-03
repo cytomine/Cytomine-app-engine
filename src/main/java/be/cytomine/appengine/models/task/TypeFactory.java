@@ -84,7 +84,7 @@ public class TypeFactory {
         Arrays.stream(StringTypeConstraint.values())
             .map(StringTypeConstraint::getStringKey)
             .filter(typeNode::has)
-            .forEach(key -> type.setConstraint(StringTypeConstraint.getConstraint(key), typeNode.get(key).asText()));
+            .forEach(key -> type.setConstraint(StringTypeConstraint.getConstraint(key), typeNode.get(key).asInt()));
 
         return type;
     }
