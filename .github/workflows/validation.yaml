@@ -4,9 +4,6 @@ on:
   pull_request:
     branches:
       - main
-    paths:
-      - "src/main/resources/schemas/tasks/task.v0.json"
-      - "src/test/resources/spec/api/openapi_spec.v0.1.0.yml"
   workflow_dispatch:
 
 jobs:
