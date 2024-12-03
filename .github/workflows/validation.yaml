@@ -25,12 +25,12 @@ jobs:
           SCHEMA_PATH: ./src/main/resources/schemas/tasks/task.v0.json
         run: >-
           ajv compile
-            -s ${{ env.SCHEMA_PATH }}
-            -c ajv-formats
-            -c ajv-formats-draft2019
-            --spec=draft2019
-            --strict=false
-            --all-errors
+          -s ${{ env.SCHEMA_PATH }}
+          -c ajv-formats
+          -c ajv-formats-draft2019
+          --spec=draft2019
+          --strict=false
+          --all-errors
 
   validate-openapi:
     runs-on: ubuntu-latest
