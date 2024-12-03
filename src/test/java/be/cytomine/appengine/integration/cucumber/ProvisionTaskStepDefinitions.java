@@ -660,6 +660,10 @@ public class ProvisionTaskStepDefinitions {
             case "ImageType":
                 provision = imageProvisionRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
                 break;
+            case "GeometryType":
+                provision = geometryProvisionRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
+                Assertions.assertEquals(((GeometryPersistence) provision).getValue(), newValue);
+                break;
         }
 
         Assertions.assertNotNull(provision);
