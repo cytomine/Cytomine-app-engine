@@ -22,6 +22,6 @@ public enum WsiTypeConstraint {
         return Arrays.stream(WsiTypeConstraint.values())
                 .filter(constraint -> constraint.getStringKey().equals(key))
                 .findFirst()
-                .orElseThrow(() -> new IllegalArgumentException("Invalid image type constraint key: " + key));
+                .orElseThrow(() -> new IllegalArgumentException("Invalid wsi type constraint key: " + key));
     }
 }
