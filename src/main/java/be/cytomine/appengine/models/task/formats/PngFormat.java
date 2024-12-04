@@ -4,7 +4,7 @@ import java.awt.Dimension;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-public class PNGFormat implements FileFormat {
+public class PngFormat implements FileFormat {
 
     public static final byte[] SIGNATURE = {
             (byte) 0x89, (byte) 0x50, (byte) 0x4E, (byte) 0x47,

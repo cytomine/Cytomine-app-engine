@@ -10,7 +10,7 @@ import org.apache.commons.imaging.formats.tiff.TiffField;
 import org.apache.commons.imaging.formats.tiff.TiffImageMetadata;
 import org.apache.commons.imaging.formats.tiff.TiffImageParser;
 
-public class TIFFFormat implements FileFormat {
+public class TiffFormat implements FileFormat {
 
     public static final byte[] LE_SIGNATURE = {
             (byte) 0x49, (byte) 0x49, (byte) 0x2A, (byte) 0x00

@@ -5,17 +5,17 @@ import java.util.Map;
 
 import be.cytomine.appengine.models.task.formats.FileFormat;
 import be.cytomine.appengine.models.task.formats.GenericFormat;
-import be.cytomine.appengine.models.task.formats.JPEGFormat;
-import be.cytomine.appengine.models.task.formats.PNGFormat;
-import be.cytomine.appengine.models.task.formats.TIFFFormat;
+import be.cytomine.appengine.models.task.formats.JpegFormat;
+import be.cytomine.appengine.models.task.formats.PngFormat;
+import be.cytomine.appengine.models.task.formats.TiffFormat;
 
 public class ImageFormatFactory {
     private static final Map<String, FileFormat> formats = new HashMap<>();
 
     static {
-        formats.put("JPEG", new JPEGFormat());
-        formats.put("PNG", new PNGFormat());
-        formats.put("TIFF", new TIFFFormat());
+        formats.put("JPEG", new JpegFormat());
+        formats.put("PNG", new PngFormat());
+        formats.put("TIFF", new TiffFormat());
     }
 
     public static FileFormat getFormat(String format) {

@@ -7,7 +7,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import javax.imageio.ImageIO;
 
-public class JPEGFormat implements FileFormat {
+public class JpegFormat implements FileFormat {
 
     public static final byte[] SIGNATURE = { (byte) 0xFF, (byte) 0xD8, (byte) 0xFF };
 

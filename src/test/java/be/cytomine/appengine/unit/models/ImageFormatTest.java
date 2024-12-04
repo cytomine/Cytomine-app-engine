@@ -17,9 +17,9 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import be.cytomine.appengine.models.task.formats.FileFormat;
-import be.cytomine.appengine.models.task.formats.JPEGFormat;
-import be.cytomine.appengine.models.task.formats.PNGFormat;
-import be.cytomine.appengine.models.task.formats.TIFFFormat;
+import be.cytomine.appengine.models.task.formats.JpegFormat;
+import be.cytomine.appengine.models.task.formats.PngFormat;
+import be.cytomine.appengine.models.task.formats.TiffFormat;
 
 public class ImageFormatTest {
 
@@ -49,9 +49,9 @@ public class ImageFormatTest {
 
     private static Stream<Arguments> streamImageFormat() {
         return Stream.of(
-            Arguments.of(new PNGFormat(), "PNG"),
-            Arguments.of(new JPEGFormat(), "JPEG"),
-            Arguments.of(new TIFFFormat(), "TIFF")
+            Arguments.of(new PngFormat(), "PNG"),
+            Arguments.of(new JpegFormat(), "JPEG"),
+            Arguments.of(new TiffFormat(), "TIFF")
         );
     }
 
