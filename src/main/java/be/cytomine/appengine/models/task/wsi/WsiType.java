@@ -3,6 +3,7 @@ package be.cytomine.appengine.models.task.wsi;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,11 +11,13 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
 
 import be.cytomine.appengine.dto.inputs.task.types.wsi.WsiTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.wsi.WsiValue;
+import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.TypeValidationException;
 import be.cytomine.appengine.handlers.FileData;
 import be.cytomine.appengine.models.task.Output;
@@ -23,13 +26,17 @@ import be.cytomine.appengine.models.task.Run;
 import be.cytomine.appengine.models.task.Type;
 import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
+import be.cytomine.appengine.models.task.formats.FileFormat;
+import be.cytomine.appengine.models.task.image.ImageFormatFactory;
 import be.cytomine.appengine.repositories.wsi.WsiPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
+import be.cytomine.appengine.utils.units.Unit;
 
 @Entity
 @Data
 @EqualsAndHashCode(callSuper = true)
 public class WsiType extends Type {
+
     @Column(nullable = true)
     private String maxFileSize;
 
@@ -41,6 +48,9 @@ public class WsiType extends Type {
 
     @Column(nullable = true)
     private List<String> formats;
+
+    @Transient
+    private FileFormat format;
 
     public void setConstraint(WsiTypeConstraint constraint, JsonNode value) {
         switch (constraint) {
@@ -59,9 +69,62 @@ public class WsiType extends Type {
         }
     }
 
-    @Override
-    public void validate(Object valuObject) throws TypeValidationException {
+    private void validateImageFormat(byte[] file) throws TypeValidationException {
+        if (formats == null || formats.isEmpty()) {
+            this.format = ImageFormatFactory.getGenericFormat();
+            return;
+        }
 
+        List<FileFormat> checkers = formats
+                .stream()
+                .map(ImageFormatFactory::getFormat)
+                .collect(Collectors.toList());
+
+        this.format = checkers
+                .stream()
+                .filter(checker -> checker.checkSignature(file))
+                .findFirst()
+                .orElse(null);
+
+        if (this.format == null) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT);
+        }
+    }
+
+    private void validateImageDimension(byte[] file) throws TypeValidationException {
+        if (maxWidth == null && maxHeight == null) {
+            return;
+        }
+    }
+
+    private void validateImageSize(byte[] file) throws TypeValidationException {
+        if (maxFileSize == null) {
+            return;
+        }
+
+        if(!Unit.isValid(maxFileSize)) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE_FORMAT);
+        }
+
+        Unit unit = new Unit(maxFileSize);
+        if (file.length > unit.getBytes()) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE);
+        }
+    }
+
+    @Override
+    public void validate(Object valueObject) throws TypeValidationException {
+        if (!(valueObject instanceof byte[])) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_TYPE_ERROR);
+        }
+
+        byte[] file = (byte[]) valueObject;
+
+        validateImageFormat(file);
+
+        validateImageDimension(file);
+
+        validateImageSize(file);
     }
 
 @Override
