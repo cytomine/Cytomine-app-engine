@@ -3,13 +3,14 @@ package be.cytomine.appengine.models.task.image;
 import java.util.HashMap;
 import java.util.Map;
 
-import be.cytomine.appengine.models.task.image.formats.GenericFormat;
-import be.cytomine.appengine.models.task.image.formats.JPEGFormat;
-import be.cytomine.appengine.models.task.image.formats.PNGFormat;
-import be.cytomine.appengine.models.task.image.formats.TIFFFormat;
+import be.cytomine.appengine.models.task.formats.FileFormat;
+import be.cytomine.appengine.models.task.formats.GenericFormat;
+import be.cytomine.appengine.models.task.formats.JPEGFormat;
+import be.cytomine.appengine.models.task.formats.PNGFormat;
+import be.cytomine.appengine.models.task.formats.TIFFFormat;
 
 public class ImageFormatFactory {
-    private static final Map<String, ImageFormat> formats = new HashMap<>();
+    private static final Map<String, FileFormat> formats = new HashMap<>();
 
     static {
         formats.put("JPEG", new JPEGFormat());
@@ -17,11 +18,11 @@ public class ImageFormatFactory {
         formats.put("TIFF", new TIFFFormat());
     }
 
-    public static ImageFormat getFormat(String format) {
+    public static FileFormat getFormat(String format) {
         return formats.get(format.toUpperCase());
     }
 
-    public static ImageFormat getGenericFormat() {
+    public static FileFormat getGenericFormat() {
         return new GenericFormat();
     }
 }

@@ -16,10 +16,10 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 
-import be.cytomine.appengine.models.task.image.ImageFormat;
-import be.cytomine.appengine.models.task.image.formats.JPEGFormat;
-import be.cytomine.appengine.models.task.image.formats.PNGFormat;
-import be.cytomine.appengine.models.task.image.formats.TIFFFormat;
+import be.cytomine.appengine.models.task.formats.FileFormat;
+import be.cytomine.appengine.models.task.formats.JPEGFormat;
+import be.cytomine.appengine.models.task.formats.PNGFormat;
+import be.cytomine.appengine.models.task.formats.TIFFFormat;
 
 public class ImageFormatTest {
 
@@ -57,14 +57,14 @@ public class ImageFormatTest {
 
     @ParameterizedTest
     @MethodSource("streamImageFormat")
-    public void testCheckSignature(ImageFormat format, String formatKey) {
+    public void testCheckSignature(FileFormat format, String formatKey) {
         byte[] image = images.get(formatKey);
         Assertions.assertTrue(format.checkSignature(image), "Image signature should be valid.");
     }
 
     @ParameterizedTest
     @MethodSource("streamImageFormat")
-    public void testGetDimensions(ImageFormat format, String formatKey) {
+    public void testGetDimensions(FileFormat format, String formatKey) {
         byte[] image = images.get(formatKey);
         Dimension dimension = format.getDimensions(image);
         Assertions.assertEquals(EXPECTED_WIDTH, dimension.getWidth(), "Width should be " + EXPECTED_WIDTH + " pixels.");
@@ -73,7 +73,7 @@ public class ImageFormatTest {
 
     @ParameterizedTest
     @MethodSource("streamImageFormat")
-    public void testValidate(ImageFormat format, String formatKey) {
+    public void testValidate(FileFormat format, String formatKey) {
         byte[] image = images.get(formatKey);
         Assertions.assertTrue(format.validate(image), "Validation should return true.");
     }

@@ -21,6 +21,7 @@ import be.cytomine.appengine.models.task.Run;
 import be.cytomine.appengine.models.task.Type;
 import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
+import be.cytomine.appengine.models.task.formats.FileFormat;
 import be.cytomine.appengine.repositories.image.ImagePersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import be.cytomine.appengine.utils.units.Unit;
@@ -48,7 +49,7 @@ public class ImageType extends Type {
     private List<String> formats;
 
     @Transient
-    private ImageFormat format;
+    private FileFormat format;
 
     public void setConstraint(ImageTypeConstraint constraint, JsonNode value) {
         switch (constraint) {
@@ -73,7 +74,7 @@ public class ImageType extends Type {
             return;
         }
 
-        List<ImageFormat> checkers = formats
+        List<FileFormat> checkers = formats
                 .stream()
                 .map(ImageFormatFactory::getFormat)
                 .collect(Collectors.toList());
