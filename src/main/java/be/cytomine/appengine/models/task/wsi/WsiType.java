@@ -1,5 +1,6 @@
 package be.cytomine.appengine.models.task.wsi;
 
+import java.awt.Dimension;
 import java.io.IOException;
 import java.util.List;
 import java.util.UUID;
@@ -27,7 +28,6 @@ import be.cytomine.appengine.models.task.Type;
 import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.models.task.formats.FileFormat;
-import be.cytomine.appengine.models.task.image.ImageFormatFactory;
 import be.cytomine.appengine.repositories.wsi.WsiPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import be.cytomine.appengine.utils.units.Unit;
@@ -71,13 +71,13 @@ public class WsiType extends Type {
 
     private void validateImageFormat(byte[] file) throws TypeValidationException {
         if (formats == null || formats.isEmpty()) {
-            this.format = ImageFormatFactory.getGenericFormat();
+            this.format = WsiFormatFactory.getGenericFormat();
             return;
         }
 
         List<FileFormat> checkers = formats
                 .stream()
-                .map(ImageFormatFactory::getFormat)
+                .map(WsiFormatFactory::getFormat)
                 .collect(Collectors.toList());
 
         this.format = checkers
@@ -95,6 +95,19 @@ public class WsiType extends Type {
         if (maxWidth == null && maxHeight == null) {
             return;
         }
+
+        Dimension dimension = format.getDimensions(file);
+        if (dimension == null) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_DIMENSION);
+        }
+
+        if (maxWidth != null && dimension.getWidth() > maxWidth) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_WIDTH);
+        }
+
+        if (maxHeight != null && dimension.getHeight() > maxHeight) {
+            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_HEIGHT);
+        }
     }
 
     private void validateImageSize(byte[] file) throws TypeValidationException {
@@ -102,7 +115,7 @@ public class WsiType extends Type {
             return;
         }
 
-        if(!Unit.isValid(maxFileSize)) {
+        if (!Unit.isValid(maxFileSize)) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE_FORMAT);
         }
 
@@ -127,7 +140,7 @@ public class WsiType extends Type {
         validateImageSize(file);
     }
 
-@Override
+    @Override
     public void persistProvision(JsonNode provision, UUID runId) {
         String parameterName = provision.get("param_name").asText();
         WsiPersistenceRepository wsiPersistenceRepository = AppEngineApplicationContext.getBean(WsiPersistenceRepository.class);
@@ -166,9 +179,11 @@ public class WsiType extends Type {
     public FileData mapToStorageFileData(JsonNode provision, String charset) {
         String parameterName = provision.get("param_name").asText();
         byte[] inputFileData = null;
+
         try {
             inputFileData = provision.get("value").binaryValue();
         } catch (IOException ignored) {}
+
         return new FileData(inputFileData, parameterName);
     }
 
@@ -178,6 +193,7 @@ public class WsiType extends Type {
         ObjectNode provisionedParameter = mapper.createObjectNode();
         provisionedParameter.put("param_name", provision.get("param_name").asText());
         provisionedParameter.put("task_run_id", String.valueOf(run.getId()));
+
         return provisionedParameter;
     }
 
@@ -187,6 +203,7 @@ public class WsiType extends Type {
         wsiValue.setParameterName(outputName);
         wsiValue.setTaskRunId(id);
         wsiValue.setType(ValueType.WSI);
+
         return wsiValue;
     }
 
@@ -197,6 +214,7 @@ public class WsiType extends Type {
         wsiValue.setParameterName(wsiPersistence.getParameterName());
         wsiValue.setTaskRunId(wsiPersistence.getRunId());
         wsiValue.setType(ValueType.WSI);
+
         return wsiValue;
     }
 }

@@ -16,4 +16,8 @@ public class WsiFormatFactory {
     public static FileFormat getFormat(String format) {
         return formats.get(format.toUpperCase());
     }
+
+    public static FileFormat getGenericFormat() {
+        return new DicomFormat();
+    }
 }
