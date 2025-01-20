@@ -76,9 +76,9 @@ public class KubernetesScheduler implements SchedulerHandler {
     @PostConstruct
     private void initUrl() throws SchedulingException {
         String port = environment.getProperty("server.port");
-        String hostAddress = getHostAddress();
+        String hostAddress = "http://localhost";//getHostAddress();
 
-        this.baseUrl = hostAddress + ":" + port + "/app-engine/v1/task-runs/";
+        this.baseUrl = hostAddress + ":" + port + "/v1/task-runs/";
         this.baseInputPath = "/tmp/app-engine/task-run-inputs-";
         this.baseOutputPath = "/tmp/app-engine/task-run-outputs-";
     }

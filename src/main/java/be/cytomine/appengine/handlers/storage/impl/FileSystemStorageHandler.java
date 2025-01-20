@@ -2,8 +2,7 @@ package be.cytomine.appengine.handlers.storage.impl;
 
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
 import be.cytomine.appengine.exceptions.FileStorageException;
-import be.cytomine.appengine.handlers.FileData;
-import be.cytomine.appengine.handlers.FileStorageHandler;
+import be.cytomine.appengine.handlers.*;
 import org.springframework.beans.factory.annotation.Value;
 
 import java.io.File;
@@ -12,11 +11,45 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+import java.util.LinkedList;
+import java.util.Queue;
 
 public class FileSystemStorageHandler implements FileStorageHandler {
 
     @Value("${storage.base-path}")
     private String basePath;
+
+    // Level-order traversal with levels separated
+    public void saveToStorage(Storage storage , StorageData storageData) throws FileStorageException {
+        if (storageData.getRoot() == null) return;
+
+        Queue<StorageDataNode> queue = new LinkedList<>();
+        queue.add(storageData.getRoot());
+
+        while (!queue.isEmpty()) {
+            int levelSize = queue.size(); // Number of nodes at the current level
+
+            // Store all nodes at the current level
+            for (int i = 0; i < levelSize; i++) {
+                StorageDataNode current = queue.poll();
+                if (current == null) continue;
+                // process the node here
+                if(current.getStorageDataType() == StorageDataType.BINARY_FILE){
+                    // create path by traversing all the way up to root
+                }
+                if(current.getStorageDataType() == StorageDataType.TEXTUAL_FILE){
+                    // create path by traversing all the way up to root
+                }
+
+                if(current.getStorageDataType() == StorageDataType.DIRECTORY){
+                    // create path by traversing all the way up to root
+                    
+                }
+                // Add children of the current node to the queue
+                queue.addAll(current.getChildren());
+            }
+        }
+    }
 
     @Override
     public void createStorage(Storage storage) throws FileStorageException {

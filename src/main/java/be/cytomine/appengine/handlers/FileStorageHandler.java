@@ -22,5 +22,7 @@ public interface FileStorageHandler {
     void deleteFile(FileData file)
         throws FileStorageException;
 
+    void saveToStorage(Storage storage , StorageData storageData) throws FileStorageException;
+
     FileData readFile(FileData emptyFile) throws FileStorageException;
 }
