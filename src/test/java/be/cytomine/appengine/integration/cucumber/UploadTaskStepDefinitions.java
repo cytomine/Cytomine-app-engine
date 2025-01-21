@@ -8,6 +8,7 @@ import be.cytomine.appengine.exceptions.FileStorageException;
 import be.cytomine.appengine.handlers.FileData;
 import be.cytomine.appengine.handlers.FileStorageHandler;
 import be.cytomine.appengine.handlers.RegistryHandler;
+import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.task.*;
 import be.cytomine.appengine.openapi.api.DefaultApi;
 import be.cytomine.appengine.openapi.invoker.ApiException;
@@ -187,8 +188,8 @@ public class UploadTaskStepDefinitions {
         // retrieve from file storage
         String bucket = uploaded.getStorageReference();
         String object = "descriptor.yml";
-        FileData descriptorFileData = new FileData(object, bucket);
-        FileData descriptor = fileStorageHandler.readFile(descriptorFileData);
+        StorageData descriptorFileData = new StorageData(object, bucket);
+        StorageData descriptor = fileStorageHandler.readFile(descriptorFileData);
         Assertions.assertNotNull(descriptor);
     }
 
@@ -281,10 +282,10 @@ public class UploadTaskStepDefinitions {
 
         // and storage service
         String object = "descriptor.yml";
-        FileData fileData = new FileData(object, persistedTask.getStorageReference());
+        StorageData fileData = new StorageData(object, persistedTask.getStorageReference());
         fileData = fileStorageHandler.readFile(fileData);
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        JsonNode descriptor = mapper.readTree(fileData.getFileData());
+        JsonNode descriptor = mapper.readTree(fileData.peek().getData());
 
         Assertions.assertNotNull(fileData);
         String shortName = descriptor.get("name_short").textValue();

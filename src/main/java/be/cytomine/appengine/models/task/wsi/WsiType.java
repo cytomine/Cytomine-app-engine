@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import be.cytomine.appengine.handlers.StorageData;
+import be.cytomine.appengine.handlers.StorageDataEntry;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -20,7 +22,6 @@ import be.cytomine.appengine.dto.inputs.task.types.wsi.WsiTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.wsi.WsiValue;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.TypeValidationException;
-import be.cytomine.appengine.handlers.FileData;
 import be.cytomine.appengine.models.task.Output;
 import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.models.task.Run;
@@ -176,7 +177,7 @@ public class WsiType extends Type {
     }
 
     @Override
-    public FileData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision, String charset) {
         String parameterName = provision.get("param_name").asText();
         byte[] inputFileData = null;
 
@@ -184,7 +185,7 @@ public class WsiType extends Type {
             inputFileData = provision.get("value").binaryValue();
         } catch (IOException ignored) {}
 
-        return new FileData(inputFileData, parameterName);
+        return new StorageData(new StorageDataEntry(inputFileData, parameterName));
     }
 
     @Override

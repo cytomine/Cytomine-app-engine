@@ -5,7 +5,8 @@ import be.cytomine.appengine.dto.inputs.task.types.number.NumberTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.number.NumberValue;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.TypeValidationException;
-import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.StorageData;
+import be.cytomine.appengine.handlers.StorageDataEntry;
 import be.cytomine.appengine.models.task.Output;
 import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.models.task.Run;
@@ -140,12 +141,12 @@ public class NumberType extends Type {
     }
 
     @Override
-    public FileData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision, String charset) {
         String value = provision.get("value").asText();
         String parameterName = provision.get("param_name").asText();
         byte[] inputFileData = value.getBytes(getStorageCharset(charset));
-
-        return new FileData(inputFileData, parameterName);
+        return new StorageData(new StorageDataEntry(inputFileData, parameterName));
+//        return new FileData(inputFileData, parameterName);
     }
 
     @Override

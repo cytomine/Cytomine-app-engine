@@ -4,6 +4,7 @@ import be.cytomine.appengine.AppEngineApplication;
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
 import be.cytomine.appengine.handlers.FileData;
 import be.cytomine.appengine.handlers.FileStorageHandler;
+import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.task.*;
 import be.cytomine.appengine.openapi.api.DefaultApi;
 import be.cytomine.appengine.openapi.invoker.ApiClient;
@@ -290,11 +291,11 @@ public class ReadTaskStepDefinitions {
         // save it in file storage service
         Storage storage = new Storage(persistedTask.getStorageReference());
         Assertions.assertTrue(fileStorageHandler.checkStorageExists(storage));
-        FileData emptyFile = new FileData(new byte[0]);
-        emptyFile.setFileName("descriptor.yml");
-        emptyFile.setStorageId(storage.getIdStorage());
+        StorageData emptyFile = new StorageData(new byte[0]);
+        emptyFile.peek().setName("descriptor.yml");
+        emptyFile.peek().setStorageId(storage.getIdStorage());
         fileStorageHandler.readFile(emptyFile);
-        Assertions.assertTrue(emptyFile.getFileData().length > 0);
+        Assertions.assertTrue(emptyFile.peek().getData().length > 0);
     }
 
     @When("user calls the download endpoint with {string} with HTTP method GET")

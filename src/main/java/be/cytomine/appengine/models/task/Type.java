@@ -3,6 +3,7 @@ package be.cytomine.appengine.models.task;
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.exceptions.TypeValidationException;
 import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.BaseEntity;
 
 import com.fasterxml.jackson.core.type.TypeReference;
@@ -55,7 +56,7 @@ public class Type extends BaseEntity {
 
     public void persistResult(Run runOptional, Output currentOutput, String outputValue){};
 
-    public FileData mapToStorageFileData(JsonNode provision , String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision , String charset) {
         return null;
     }
 

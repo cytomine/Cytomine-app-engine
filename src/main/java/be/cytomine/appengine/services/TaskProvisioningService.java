@@ -8,9 +8,7 @@ import be.cytomine.appengine.dto.responses.errors.ErrorBuilder;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.dto.responses.errors.details.ParameterError;
 import be.cytomine.appengine.exceptions.*;
-import be.cytomine.appengine.handlers.FileData;
-import be.cytomine.appengine.handlers.FileStorageHandler;
-import be.cytomine.appengine.handlers.SchedulerHandler;
+import be.cytomine.appengine.handlers.*;
 import be.cytomine.appengine.models.task.*;
 import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.repositories.*;
@@ -248,9 +246,12 @@ public class TaskProvisioningService {
         Input inputForType = inputs.stream().filter(input -> input.getName().equalsIgnoreCase(provision.get("param_name").asText())).findFirst().get();
 
         Storage runStorage = new Storage("task-run-inputs-" + run.getId());
-        FileData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision, charset);
+        // Todo : make this return StorageData (DONE)
+        StorageData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision,charset);
+//        FileData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision, charset);
         try {
-            fileStorageHandler.createFile(runStorage, inputProvisionFileData);
+            // Todo : use saveToStorage() instead of genereic createFile() (DONE)
+            fileStorageHandler.saveToStorage(runStorage, inputProvisionFileData);
         } catch (FileStorageException e) {
             AppEngineError error = ErrorBuilder.buildParamRelatedError(ErrorCode.STORAGE_STORING_INPUT_FAILED, provision.get("param_name").asText(), e.getMessage());
             throw new ProvisioningException(error);
@@ -268,9 +269,12 @@ public class TaskProvisioningService {
         provision.put("value", value);
 
         Storage runStorage = new Storage("task-run-inputs-" + run.getId());
-        FileData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision, charset);
+        // Todo : make this return StorageData (DONE)
+        StorageData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision,charset);
+//        FileData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision, charset);
         try {
-            fileStorageHandler.createFile(runStorage, inputProvisionFileData);
+            // Todo : use saveToStorage() instead of genereic createFile() (DONE)
+            fileStorageHandler.saveToStorage(runStorage, inputProvisionFileData);
         } catch (FileStorageException e) {
             AppEngineError error = ErrorBuilder.buildParamRelatedError(ErrorCode.STORAGE_STORING_INPUT_FAILED, parameterName, e.getMessage());
             throw new ProvisioningException(error);
@@ -310,11 +314,26 @@ public class TaskProvisioningService {
         logger.info("Retrieving Inputs Archive : zipping...");
         ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream);
         for (TypePersistence provision : provisions) {
-            FileData provisionFileData = fileStorageHandler.readFile(new FileData(provision.getParameterName(), "task-run-inputs-" + run.getId()));
-            ZipEntry zipEntry = new ZipEntry(provision.getParameterName());
-            zipOut.putNextEntry(zipEntry);
-            zipOut.write(provisionFileData.getFileData());
-            zipOut.closeEntry();
+            // Todo : readFile() also is designed with parameter -> file assumption .. poll StorageData to build the Zip archive [DONE]
+            StorageData provisionFileData = fileStorageHandler.readFile(new StorageData(provision.getParameterName(), "task-run-inputs-" + run.getId()));
+            while (!provisionFileData.isEmpty()){
+                StorageDataEntry current = provisionFileData.poll();
+                String name = null;
+                if(current.getStorageDataType().equals(StorageDataType.FILE)){
+                    // it's a file matching a provision
+                    name = current.getName();
+                }
+                if(current.getStorageDataType().equals(StorageDataType.DIRECTORY)){
+                    // it's a directory matching a provision .. add with a trailing /
+                    name = current.getName() + "/";
+                }
+                ZipEntry zipEntry = new ZipEntry(current.getName());
+                zipOut.putNextEntry(zipEntry);
+                if(current.getStorageDataType().equals(StorageDataType.FILE)){
+                    zipOut.write(current.getData());
+                }
+                zipOut.closeEntry();
+            }
         }
         zipOut.close();
         byteArrayOutputStream.close();
@@ -342,11 +361,26 @@ public class TaskProvisioningService {
         logger.info("Retrieving Outputs Archive : zipping...");
         ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream);
         for (TypePersistence result : results) {
-            FileData provision = fileStorageHandler.readFile(new FileData(result.getParameterName(), "task-run-outputs-" + runOptional.get().getId()));
-            ZipEntry zipEntry = new ZipEntry(result.getParameterName());
-            zipOut.putNextEntry(zipEntry);
-            zipOut.write(provision.getFileData());
-            zipOut.closeEntry();
+            // Todo : readFile() also is designed with parameter -> file assumption .. poll to build Zip archive [DONE]
+            StorageData provisionFileData = fileStorageHandler.readFile(new StorageData(result.getParameterName(), "task-run-outputs-" + run.getId()));
+            while (!provisionFileData.isEmpty()){
+                StorageDataEntry current = provisionFileData.poll();
+                String name = null;
+                if(current.getStorageDataType().equals(StorageDataType.FILE)){
+                    // it's a file matching a provision
+                    name = current.getName();
+                }
+                if(current.getStorageDataType().equals(StorageDataType.DIRECTORY)){
+                    // it's a directory matching a provision .. add with a trailing /
+                    name = current.getName() + "/";
+                }
+                ZipEntry zipEntry = new ZipEntry(current.getName());
+                zipOut.putNextEntry(zipEntry);
+                if(current.getStorageDataType().equals(StorageDataType.FILE)){
+                    zipOut.write(current.getData());
+                }
+                zipOut.closeEntry();
+            }
         }
         zipOut.close();
         byteArrayOutputStream.close();
@@ -381,15 +415,25 @@ public class TaskProvisioningService {
             logger.info("Posting Outputs Archive : unzipped");
             List<Output> remainingOutputs = new ArrayList<>(runTaskOutputs);
             List<TaskRunParameterValue> taskRunParameterValues = new ArrayList<>();
-
+            // Todo : here it loops to read files in the archive assuming all parameters are files in the archive [DONE]
+            // Todo : make sure directories are checked against types and properly processed [DONE]
             ZipEntry ze;
             while ((ze = multiPartFileZipInputStream.getNextZipEntry()) != null) {
                 // look for output matching file name
+                boolean fileForComplexType = false;
                 Output currentOutput = null;
                 for (int i = 0; i < remainingOutputs.size(); i++) {
                     currentOutput = remainingOutputs.get(i);
-                    if (currentOutput.getName().equals(ze.getName())) {
+                    if (currentOutput.getName().equals(ze.getName())) { // assuming it's a file
                         remainingOutputs.remove(i);
+                        break;
+                    }
+                    // remove the trailing slash
+                    String noTrailingSlash = ze.getName().replace("/" , "");
+                    if (currentOutput.getName().equals(noTrailingSlash)) { // assuming it's a directory
+                        currentOutput.setName(ze.getName());
+                        remainingOutputs.remove(i);
+                        fileForComplexType = true;
                         break;
                     }
                     currentOutput = null;
@@ -405,8 +449,12 @@ public class TaskProvisioningService {
                     throw new ProvisioningException(error);
                 }
 
+                // Todo : reading a single file which does not work with complex types
+                // Todo : make sure if a directory exists it matches a type definition and properly mapped to StorageData
                 // read file
                 String outputName = currentOutput.getName();
+                // reads content into byte[] if the ZipEntry is a file
+                // if directory we read all the zip entries starting with the name of the parameter
                 byte[] rawOutput = multiPartFileZipInputStream.readNBytes((int) ze.getSize());
                 String output = new String(rawOutput, getStorageCharset(charset));
 
@@ -414,6 +462,7 @@ public class TaskProvisioningService {
                 // saving to database does not care about the type
                 saveOutput(run, currentOutput, trimmedOutput);
                 // saving to the storage does not care about the type
+                // Todo : should not get raw data byte array .. it should rather get StorageData
                 storeOutputInFileStorage(run, rawOutput, outputName);
                 // based on parsed type build the response
                 taskRunParameterValues.add(currentOutput.getType().buildTaskRunParameterValue(trimmedOutput, run.getId(), outputName));
@@ -447,9 +496,11 @@ public class TaskProvisioningService {
     private void storeOutputInFileStorage(Run run, byte[] outputValue, String name) throws ProvisioningException {
         logger.info("Posting Outputs Archive : storing in file storage...");
         Storage outputsStorage = new Storage("task-run-outputs-" + run.getId());
-        FileData outputFileData = new FileData(outputValue, name);
+        // Todo : create a new StorageData [DONE]
+        StorageData outputFileData = new StorageData(outputValue, name);
         try {
-            fileStorageHandler.createFile(outputsStorage, outputFileData);
+            // Todo : use saveToStorage() instead of genereic createFile() [DONE]
+            fileStorageHandler.saveToStorage(outputsStorage, outputFileData);
         } catch (FileStorageException e) {
             run.setState(TaskRunState.FAILED);
             runRepository.saveAndFlush(run);
@@ -513,7 +564,8 @@ public class TaskProvisioningService {
 
         String io = type.equals(ParameterType.INPUT) ? "inputs" : "outputs";
         Storage storage = new Storage("task-run-" + io + "-" + runId);
-        FileData data = new FileData(parameterName, storage.getIdStorage());
+        // Todo : use StorageData instead of FileData [DONE]
+        StorageData data = new StorageData(parameterName, storage.getIdStorage());
 
         logger.info("Get IO file from storage: read file " + parameterName + " from storage...");
         try {
@@ -528,7 +580,7 @@ public class TaskProvisioningService {
         }
 
         logger.info("Get IO file from storage: done");
-        return data.getFileData();
+        return data.peek().getData();
     }
 
     private List<TaskRunParameterValue> buildTaskRunParameterValues(Run run, ParameterType type) {

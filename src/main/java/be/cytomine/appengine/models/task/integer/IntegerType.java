@@ -5,7 +5,8 @@ import be.cytomine.appengine.dto.inputs.task.types.integer.IntegerTypeConstraint
 import be.cytomine.appengine.dto.inputs.task.types.integer.IntegerValue;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.TypeValidationException;
-import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.StorageData;
+import be.cytomine.appengine.handlers.StorageDataEntry;
 import be.cytomine.appengine.models.task.*;
 import be.cytomine.appengine.repositories.integer.IntegerPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
@@ -122,11 +123,12 @@ public class IntegerType extends Type {
     }
 
     @Override
-    public FileData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision, String charset) {
         String value = provision.get("value").asText();
         String parameterName = provision.get("param_name").asText();
         byte[] inputFileData = value.getBytes(getStorageCharset(charset));
-        return new FileData(inputFileData, parameterName);
+        return new StorageData(new StorageDataEntry(inputFileData, parameterName));
+//        return new FileData(inputFileData, parameterName);
     }
 
 

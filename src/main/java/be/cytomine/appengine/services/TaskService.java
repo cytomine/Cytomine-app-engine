@@ -3,6 +3,7 @@ package be.cytomine.appengine.services;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import be.cytomine.appengine.handlers.StorageData;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.transaction.Transactional;
 import org.slf4j.Logger;
@@ -252,13 +253,13 @@ public class TaskService {
         return new TaskIdentifiers(taskLocalIdentifier, storageIdentifier, imageRegistryCompliantName);
     }
 
-    public FileData retrieveYmlDescriptor(String namespace, String version) throws TaskServiceException, TaskNotFoundException {
+    public StorageData retrieveYmlDescriptor(String namespace, String version) throws TaskServiceException, TaskNotFoundException {
         logger.info("Storage : retrieving descriptor.yml...");
         Task task = taskRepository.findByNamespaceAndVersion(namespace, version);
         if (task == null)
             throw new TaskNotFoundException("task not found");
 
-        FileData file = new FileData("descriptor.yml", task.getStorageReference());
+        StorageData file = new StorageData("descriptor.yml", task.getStorageReference());
         try {
             file = fileStorageHandler.readFile(file);
         } catch (FileStorageException ex) {
@@ -268,12 +269,12 @@ public class TaskService {
         return file;
     }
 
-    public FileData retrieveYmlDescriptor(String id) throws TaskServiceException, TaskNotFoundException {
+    public StorageData retrieveYmlDescriptor(String id) throws TaskServiceException, TaskNotFoundException {
         logger.info("Storage : retrieving descriptor.yml...");
         Optional<Task> task = taskRepository.findById(UUID.fromString(id));
         if (task.isEmpty())
             throw new TaskNotFoundException("task not found");
-        FileData file = new FileData("descriptor.yml", task.get().getStorageReference());
+        StorageData file = new StorageData("descriptor.yml", task.get().getStorageReference());
         try {
             file = fileStorageHandler.readFile(file);
         } catch (FileStorageException ex) {

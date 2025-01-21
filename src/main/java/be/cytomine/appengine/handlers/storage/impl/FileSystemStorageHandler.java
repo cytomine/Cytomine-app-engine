@@ -13,6 +13,7 @@ import java.nio.file.Paths;
 import java.util.Comparator;
 import java.util.LinkedList;
 import java.util.Queue;
+import java.util.stream.Stream;
 
 public class FileSystemStorageHandler implements FileStorageHandler {
 
@@ -21,23 +22,12 @@ public class FileSystemStorageHandler implements FileStorageHandler {
 
     // Level-order traversal with levels separated
     public void saveToStorage(Storage storage , StorageData storageData) throws FileStorageException {
-        if (storageData.getRoot() == null) return;
-
-        Queue<StorageDataNode> queue = new LinkedList<>();
-        queue.add(storageData.getRoot());
-
-        while (!queue.isEmpty()) {
-            int levelSize = queue.size(); // Number of nodes at the current level
-
-            // Store all nodes at the current level
-            for (int i = 0; i < levelSize; i++) {
-                StorageDataNode current = queue.poll();
+        if (storageData.peek() == null) return;
+        while (!storageData.isEmpty()) {
+                StorageDataEntry current = storageData.poll();
                 if (current == null) continue;
                 // process the node here
-                if(current.getStorageDataType() == StorageDataType.BINARY_FILE){
-                    // create path by traversing all the way up to root
-                }
-                if(current.getStorageDataType() == StorageDataType.TEXTUAL_FILE){
+                if(current.getStorageDataType() == StorageDataType.FILE){
                     // create path by traversing all the way up to root
                 }
 
@@ -45,9 +35,7 @@ public class FileSystemStorageHandler implements FileStorageHandler {
                     // create path by traversing all the way up to root
                     
                 }
-                // Add children of the current node to the queue
-                queue.addAll(current.getChildren());
-            }
+
         }
     }
 
@@ -82,6 +70,7 @@ public class FileSystemStorageHandler implements FileStorageHandler {
 
     @Override
     public void createFile(Storage storage, FileData file) throws FileStorageException {
+        // Todo : this is replaced by saveToStorage() for provisioning related operations
         String filename = file.getFileName();
         String storageId = storage.getIdStorage();
 
@@ -106,11 +95,12 @@ public class FileSystemStorageHandler implements FileStorageHandler {
     }
 
     @Override
-    public void deleteFile(FileData file) throws FileStorageException {
-        String filename = file.getFileName();
+    public void deleteFile(StorageData file) throws FileStorageException {
+        // Todo : delete the file or the root directory of a complex type
+        String filename = file.peek().getName();
 
         try {
-            Path filePath = Paths.get(basePath, file.getStorageId(), filename);
+            Path filePath = Paths.get(basePath, file.peek().getStorageId(), filename);
             Files.deleteIfExists(filePath);
         } catch (IOException e) {
             throw new FileStorageException("Failed to delete file " + filename);
@@ -118,15 +108,32 @@ public class FileSystemStorageHandler implements FileStorageHandler {
     }
 
     @Override
-    public FileData readFile(FileData emptyFile) throws FileStorageException {
-        String filename = emptyFile.getFileName();
-
+    public StorageData readFile(StorageData emptyFile) throws FileStorageException {
+        // Todo : read the parameter file or a complete directory when applicable
+        StorageDataEntry current = emptyFile.poll();
+        String filename = current.getName();
+        Path filePath = Paths.get(basePath, current.getStorageId(), filename);
         try {
-            Path filePath = Paths.get(basePath, emptyFile.getStorageId(), filename);
-            byte[] data = Files.readAllBytes(filePath);
-            emptyFile.setFileData(data);
+            Files.walk(filePath).forEach(path -> {
+                if (Files.isRegularFile(path)) {
+                    try {
+                        current.setData(Files.readAllBytes(path));
+                        current.setName(path.toString());
+                        current.setStorageDataType(StorageDataType.FILE);
+                        emptyFile.add(current);
+                    } catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+
+                if (Files.isDirectory(path)) {
+                    current.setName(path.toString());
+                    current.setStorageDataType(StorageDataType.DIRECTORY);
+                    emptyFile.add(current);
+                }
+            });
             return emptyFile;
-        } catch (IOException e) {
+        } catch (IOException | RuntimeException e) {
             throw new FileStorageException("Failed to read file " + filename);
         }
     }

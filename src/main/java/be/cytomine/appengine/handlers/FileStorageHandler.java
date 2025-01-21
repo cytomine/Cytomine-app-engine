@@ -19,10 +19,10 @@ public interface FileStorageHandler {
     boolean checkStorageExists(String idStorage)
         throws FileStorageException;
 
-    void deleteFile(FileData file)
+    void deleteFile(StorageData file)
         throws FileStorageException;
 
     void saveToStorage(Storage storage , StorageData storageData) throws FileStorageException;
 
-    FileData readFile(FileData emptyFile) throws FileStorageException;
+    StorageData readFile(StorageData emptyFile) throws FileStorageException;
 }

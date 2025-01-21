@@ -6,6 +6,7 @@ import be.cytomine.appengine.dto.inputs.task.GenericParameterProvision;
 import be.cytomine.appengine.exceptions.FileStorageException;
 import be.cytomine.appengine.handlers.FileData;
 import be.cytomine.appengine.handlers.FileStorageHandler;
+import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.task.*;
 import be.cytomine.appengine.models.task.bool.BooleanPersistence;
 import be.cytomine.appengine.models.task.bool.BooleanType;
@@ -65,7 +66,6 @@ import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -441,10 +441,10 @@ public class ProvisionTaskStepDefinitions {
 
     @Then("a input file named {string} is created in the task run storage {string}+UUID with content {string}")
     public void a_input_file_named_is_created_in_the_task_run_storage_with_content(String fileName, String template, String content) throws FileStorageException {
-        FileData descriptorMetaData = new FileData(fileName, template + "inputs-" + persistedRun.getId().toString());
-        FileData descriptor = fileStorageHandler.readFile(descriptorMetaData);
+        StorageData descriptorMetaData = new StorageData(fileName, template + "inputs-" + persistedRun.getId().toString());
+        StorageData descriptor = fileStorageHandler.readFile(descriptorMetaData);
         Assertions.assertNotNull(descriptor);
-        String fileContent = new String(descriptor.getFileData(), StandardCharsets.UTF_8); // default encoding assumed
+        String fileContent = new String(descriptor.peek().getData(), StandardCharsets.UTF_8); // default encoding assumed
         Assertions.assertTrue(fileContent.equalsIgnoreCase(content));
     }
 
@@ -710,10 +710,10 @@ public class ProvisionTaskStepDefinitions {
 
     @Then("the input file named {string} is updated in the task run storage {string}+UUID with content {string}")
     public void the_input_file_named_is_updated_in_the_task_run_storage_with_content(String fileName, String template, String content) throws FileStorageException {
-        FileData descriptorMetaData = new FileData(fileName, template + "inputs-" + persistedRun.getId().toString());
-        FileData descriptor = fileStorageHandler.readFile(descriptorMetaData);
+        StorageData descriptorMetaData = new StorageData(fileName, template + "inputs-" + persistedRun.getId().toString());
+        StorageData descriptor = fileStorageHandler.readFile(descriptorMetaData);
         Assertions.assertNotNull(descriptor);
-        String fileContent = new String(descriptor.getFileData(), StandardCharsets.UTF_8); // default encoding assumed
+        String fileContent = new String(descriptor.peek().getData(), StandardCharsets.UTF_8); // default encoding assumed
         Assertions.assertTrue(fileContent.equalsIgnoreCase(content));
     }
 }
