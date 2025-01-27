@@ -8,6 +8,7 @@ import java.util.stream.Collectors;
 
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.handlers.StorageDataEntry;
+import be.cytomine.appengine.handlers.StorageDataType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -160,7 +161,7 @@ public class WsiType extends Type {
     }
 
     @Override
-    public void persistResult(Run run, Output currentOutput, String outputValue) {
+    public void persistResult(Run run, Output currentOutput, StorageData  outputValue) {
         WsiPersistenceRepository wsiPersistenceRepository = AppEngineApplicationContext.getBean(WsiPersistenceRepository.class);
         WsiPersistence result = wsiPersistenceRepository.findWsiPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result != null) {
@@ -185,7 +186,8 @@ public class WsiType extends Type {
             inputFileData = provision.get("value").binaryValue();
         } catch (IOException ignored) {}
 
-        return new StorageData(new StorageDataEntry(inputFileData, parameterName));
+        StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName , StorageDataType.FILE);
+        return new StorageData(storageDataEntry);
     }
 
     @Override
@@ -199,7 +201,7 @@ public class WsiType extends Type {
     }
 
     @Override
-    public WsiValue buildTaskRunParameterValue(String output, UUID id, String outputName) {
+    public WsiValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
         WsiValue wsiValue = new WsiValue();
         wsiValue.setParameterName(outputName);
         wsiValue.setTaskRunId(id);

@@ -7,6 +7,7 @@ import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.TypeValidationException;
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.handlers.StorageDataEntry;
+import be.cytomine.appengine.handlers.StorageDataType;
 import be.cytomine.appengine.models.task.Output;
 import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.models.task.Run;
@@ -122,10 +123,12 @@ public class NumberType extends Type {
     }
 
     @Override
-    public void persistResult(Run run, Output currentOutput, String outputValue) {
+    public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         NumberPersistenceRepository numberPersistenceRepository = AppEngineApplicationContext.getBean(NumberPersistenceRepository.class);
         NumberPersistence result = numberPersistenceRepository.findNumberPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        double value = Double.parseDouble(outputValue);
+        String output = new String(outputValue.poll().getData(), getStorageCharset("UTF_8"));
+        String trimmedOutput = output.trim();
+        double value = Double.parseDouble(trimmedOutput);
         if (result == null) {
             result = new NumberPersistence();
             result.setValueType(ValueType.NUMBER);
@@ -144,8 +147,9 @@ public class NumberType extends Type {
     public StorageData mapToStorageFileData(JsonNode provision, String charset) {
         String value = provision.get("value").asText();
         String parameterName = provision.get("param_name").asText();
-        byte[] inputFileData = value.getBytes(getStorageCharset(charset));
-        return new StorageData(new StorageDataEntry(inputFileData, parameterName));
+        byte[] inputFileData = value.getBytes(getStorageCharset("UTF_8"));
+        StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName , StorageDataType.FILE);
+        return new StorageData(storageDataEntry);
 //        return new FileData(inputFileData, parameterName);
     }
 
@@ -161,7 +165,10 @@ public class NumberType extends Type {
     }
 
     @Override
-    public TaskRunParameterValue buildTaskRunParameterValue(String trimmedOutput, UUID id, String outputName) {
+    public TaskRunParameterValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
+        String outputValue = new String(output.poll().getData(), getStorageCharset("UTF_8"));
+        String trimmedOutput = outputValue.trim();
+
         NumberValue value = new NumberValue();
         value.setParameterName(outputName);
         value.setTaskRunId(id);

@@ -7,6 +7,7 @@ import java.util.UUID;
 
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.handlers.StorageDataEntry;
+import be.cytomine.appengine.handlers.StorageDataType;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
@@ -163,7 +164,7 @@ public class ImageType extends Type {
     }
 
     @Override
-    public void persistResult(Run run, Output currentOutput, String outputValue) {
+    public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         ImagePersistenceRepository imagePersistenceRepository = AppEngineApplicationContext.getBean(ImagePersistenceRepository.class);
         ImagePersistence result = imagePersistenceRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result != null) {
@@ -185,7 +186,8 @@ public class ImageType extends Type {
         try {
             inputFileData = provision.get("value").binaryValue();
         } catch (IOException ignored) {}
-        return new StorageData(new StorageDataEntry(inputFileData, parameterName));
+        StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName , StorageDataType.FILE);
+        return new StorageData(storageDataEntry);
     }
 
     @Override
@@ -198,7 +200,7 @@ public class ImageType extends Type {
     }
 
     @Override
-    public ImageValue buildTaskRunParameterValue(String output, UUID id, String outputName) {
+    public ImageValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
         ImageValue imageValue = new ImageValue();
         imageValue.setParameterName(outputName);
         imageValue.setTaskRunId(id);

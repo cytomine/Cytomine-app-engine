@@ -13,6 +13,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +36,10 @@ public class Type extends BaseEntity {
     @ElementCollection
     private List<String> constraints; // used to track which constraints are defined for this type object
 
+    @Value("${storage.input.charset}")
+    @Transient
+    private String charset;
+
     /**
      * Parse a string representation of a list of string to a list of strings
      *
@@ -54,7 +59,7 @@ public class Type extends BaseEntity {
 
     public void persistProvision(JsonNode provision , UUID runId){};
 
-    public void persistResult(Run runOptional, Output currentOutput, String outputValue){};
+    public void persistResult(Run runOptional, Output currentOutput, StorageData outputValue){};
 
     public StorageData mapToStorageFileData(JsonNode provision , String charset) {
         return null;
@@ -75,7 +80,7 @@ public class Type extends BaseEntity {
         return null;
     }
 
-    public TaskRunParameterValue buildTaskRunParameterValue(String trimmedOutput, UUID id, String outputName) {return null;}
+    public TaskRunParameterValue buildTaskRunParameterValue(StorageData outputData, UUID id, String outputName) {return null;}
 
     public TaskRunParameterValue buildTaskRunParameterValue(TypePersistence typePersistence) {return null;}
 }

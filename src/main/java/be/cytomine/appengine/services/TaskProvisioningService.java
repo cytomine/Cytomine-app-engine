@@ -296,7 +296,7 @@ public class TaskProvisioningService {
         }
     }
 
-    public FileData retrieveInputsZipArchive(String runId) throws ProvisioningException, FileStorageException, IOException {
+    public StorageData retrieveInputsZipArchive(String runId) throws ProvisioningException, FileStorageException, IOException {
         logger.info("Retrieving Inputs Archive : retrieving...");
         Run run = getRunIfValid(runId);
         if (run.getState().equals(TaskRunState.CREATED)) {
@@ -338,10 +338,10 @@ public class TaskProvisioningService {
         zipOut.close();
         byteArrayOutputStream.close();
         logger.info("Retrieving Inputs Archive : zipped...");
-        return new FileData(byteArrayOutputStream.toByteArray());
+        return new StorageData(byteArrayOutputStream.toByteArray());
     }
 
-    public FileData retrieveOutputsZipArchive(String runId) throws ProvisioningException, FileStorageException, IOException {
+    public StorageData retrieveOutputsZipArchive(String runId) throws ProvisioningException, FileStorageException, IOException {
         logger.info("Retrieving Outputs Archive : retrieving...");
         Optional<Run> runOptional = runRepository.findById(UUID.fromString(runId));
         if (runOptional.isEmpty()) {
@@ -385,7 +385,7 @@ public class TaskProvisioningService {
         zipOut.close();
         byteArrayOutputStream.close();
         logger.info("Retrieving Outputs Archive : zipped...");
-        return new FileData(byteArrayOutputStream.toByteArray());
+        return new StorageData(byteArrayOutputStream.toByteArray());
     }
 
     public List<TaskRunParameterValue> postOutputsZipArchive(String runId, MultipartFile outputs) throws ProvisioningException {
@@ -408,19 +408,21 @@ public class TaskProvisioningService {
             throw new RuntimeException(e);
         }
     }
-
+    // This fuction should return a JsonNode object to give more freedom to the type implementer to return complex types
     private List<TaskRunParameterValue> processOutputFiles(MultipartFile outputs, Set<Output> runTaskOutputs, Run run) throws IOException, ProvisioningException {
         // read files from the archive
         try (ZipArchiveInputStream multiPartFileZipInputStream = new ZipArchiveInputStream(outputs.getInputStream())) {
             logger.info("Posting Outputs Archive : unzipped");
             List<Output> remainingOutputs = new ArrayList<>(runTaskOutputs);
             List<TaskRunParameterValue> taskRunParameterValues = new ArrayList<>();
+            List<StorageData> contentsOfZip = new ArrayList<>();
+            List<Output> remainingUnStoredOutputs = new ArrayList<>(runTaskOutputs);
             // Todo : here it loops to read files in the archive assuming all parameters are files in the archive [DONE]
             // Todo : make sure directories are checked against types and properly processed [DONE]
             ZipEntry ze;
             while ((ze = multiPartFileZipInputStream.getNextZipEntry()) != null) {
                 // look for output matching file name
-                boolean fileForComplexType = false;
+                boolean isDirectory = false;
                 Output currentOutput = null;
                 for (int i = 0; i < remainingOutputs.size(); i++) {
                     currentOutput = remainingOutputs.get(i);
@@ -431,9 +433,9 @@ public class TaskProvisioningService {
                     // remove the trailing slash
                     String noTrailingSlash = ze.getName().replace("/" , "");
                     if (currentOutput.getName().equals(noTrailingSlash)) { // assuming it's a directory
-                        currentOutput.setName(ze.getName());
+                        currentOutput.setName(ze.getName()); // already contains the trailing /
                         remainingOutputs.remove(i);
-                        fileForComplexType = true;
+                        isDirectory = true;
                         break;
                     }
                     currentOutput = null;
@@ -449,24 +451,55 @@ public class TaskProvisioningService {
                     throw new ProvisioningException(error);
                 }
 
-                // Todo : reading a single file which does not work with complex types
-                // Todo : make sure if a directory exists it matches a type definition and properly mapped to StorageData
-                // read file
-                String outputName = currentOutput.getName();
-                // reads content into byte[] if the ZipEntry is a file
-                // if directory we read all the zip entries starting with the name of the parameter
-                byte[] rawOutput = multiPartFileZipInputStream.readNBytes((int) ze.getSize());
-                String output = new String(rawOutput, getStorageCharset(charset));
+                // create a StorageData object and add it to the list to make it searchable
+                StorageData parameterZipEntryStorageData;
+                if(isDirectory){
+                    parameterZipEntryStorageData = new StorageData(currentOutput.getName());
+                    contentsOfZip.add(parameterZipEntryStorageData);
+                }else {
+                    byte[] rawOutput = multiPartFileZipInputStream.readNBytes((int) ze.getSize());
+                    parameterZipEntryStorageData = new StorageData(rawOutput , currentOutput.getName());
+                    contentsOfZip.add(parameterZipEntryStorageData);
+                }
 
-                String trimmedOutput = output.trim();
-                // saving to database does not care about the type
-                saveOutput(run, currentOutput, trimmedOutput);
-                // saving to the storage does not care about the type
-                // Todo : should not get raw data byte array .. it should rather get StorageData
-                storeOutputInFileStorage(run, rawOutput, outputName);
-                // based on parsed type build the response
-                taskRunParameterValues.add(currentOutput.getType().buildTaskRunParameterValue(trimmedOutput, run.getId(), outputName));
             }
+            // a compaction step
+            // order by the length of name to make sure deeper files and directories are merged first
+            contentsOfZip = contentsOfZip.stream().sorted((s1, s2) -> Integer.compare(s2.peek().getName().length(), s1.peek().getName().length())).toList();
+            // merge StorageData objects together
+            for (StorageData storageData : contentsOfZip) {
+                for (StorageData compared : contentsOfZip) {
+                    if (storageData.equals(compared)) { continue;}
+                    if (compared.peek().getName().startsWith(storageData.peek().getName())) {
+                        storageData.merge(compared);
+                        contentsOfZip.remove(compared);
+                    }
+                }
+            }
+            // processing of files
+            // Todo : reading a single file which does not work with complex types (DONE)
+            // Todo : make sure if a directory exists it matches a type definition and properly mapped to StorageData (DONE)
+
+                for (Output currentOutput : remainingUnStoredOutputs) {
+                    Optional<StorageData> currentOutputStorageDataOptional = contentsOfZip.stream().filter(s -> s.peek().getName().equals(currentOutput.getName())).findFirst();
+                    StorageData currentOutputStorageData = null;
+                    if (currentOutputStorageDataOptional.isPresent()) {
+                        currentOutputStorageData = currentOutputStorageDataOptional.get();
+                    }
+                    StorageData copyForStorageData = new StorageData(currentOutputStorageData);
+                    StorageData copyForOutputResponse = new StorageData(currentOutputStorageData);
+                    // read file
+                    String outputName = currentOutput.getName();
+                    // saving to database does not care about the type
+                    saveOutput(run, currentOutput, currentOutputStorageData);
+                    // saving to the storage does not care about the type
+                    // Todo : should not get raw data byte array .. it should rather get StorageData
+                    storeOutputInFileStorage(run, copyForStorageData, outputName);
+                    // based on parsed type build the response
+                    taskRunParameterValues.add(currentOutput.getType().buildTaskRunParameterValue(copyForOutputResponse, run.getId(), outputName));
+
+                }
+
 
             if (!remainingOutputs.isEmpty()) {
                 AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_MISSING_OUTPUTS);
@@ -493,11 +526,9 @@ public class TaskProvisioningService {
         };
     }
 
-    private void storeOutputInFileStorage(Run run, byte[] outputValue, String name) throws ProvisioningException {
+    private void storeOutputInFileStorage(Run run, StorageData outputFileData, String name) throws ProvisioningException {
         logger.info("Posting Outputs Archive : storing in file storage...");
         Storage outputsStorage = new Storage("task-run-outputs-" + run.getId());
-        // Todo : create a new StorageData [DONE]
-        StorageData outputFileData = new StorageData(outputValue, name);
         try {
             // Todo : use saveToStorage() instead of genereic createFile() [DONE]
             fileStorageHandler.saveToStorage(outputsStorage, outputFileData);
@@ -511,7 +542,7 @@ public class TaskProvisioningService {
         logger.info("Posting Outputs Archive : stored");
     }
 
-    private void saveOutput(Run run, Output currentOutput, String outputValue) {
+    private void saveOutput(Run run, Output currentOutput, StorageData outputValue) {
         logger.info("Posting Outputs Archive : saving...");
         currentOutput.getType().persistResult(run, currentOutput, outputValue);
         logger.info("Posting Outputs Archive : saved...");

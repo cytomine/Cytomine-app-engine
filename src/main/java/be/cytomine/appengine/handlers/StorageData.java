@@ -10,14 +10,31 @@ import java.util.Queue;
 public class StorageData {
     Queue<StorageDataEntry> queue;
 
+    public StorageData(StorageData other) {
+        if (other != null && other.getQueue() != null){
+            this.queue = new LinkedList<>();
+            this.queue.addAll(other.getQueue());
+        }
+
+    }
+
+
     public StorageData(StorageDataEntry root) {
         queue = new LinkedList<>();
         queue.add(root);
     }
-
+    // useful to create files in StorageData
     public StorageData(byte[] data, String name) {
         StorageDataEntry root = new StorageDataEntry(data);
+        root.setStorageDataType(StorageDataType.FILE);
         root.setName(name);
+        queue = new LinkedList<>();
+        queue.add(root);
+    }
+    // useful to create a directory in StorageData
+    public StorageData(String name) {
+        StorageDataEntry root = new StorageDataEntry(name);
+        root.setStorageDataType(StorageDataType.DIRECTORY);
         queue = new LinkedList<>();
         queue.add(root);
     }
@@ -28,8 +45,8 @@ public class StorageData {
         queue.add(root);
     }
 
-    public StorageData(String parameterName, String s) {
-        StorageDataEntry root = new StorageDataEntry(parameterName, s);
+    public StorageData(String parameterName, String storageId) {
+        StorageDataEntry root = new StorageDataEntry(parameterName, storageId);
         queue = new LinkedList<>();
         queue.add(root);
     }
@@ -51,5 +68,14 @@ public class StorageData {
 
     public boolean isEmpty() {
         return queue.isEmpty();
+    }
+    // used to merge two StorageData together just like merging two directories together
+    // files and directories with the same name are duplicated .. it's now used in a safe context
+    // and duplicates are guaranteed not to exist.
+    public boolean merge(StorageData other) {
+        if(Objects.isNull(other) || other.isEmpty()) { return false;}
+        int sizeBeforeMerge = queue.size();
+        queue.addAll(other.getQueue());
+        return queue.size() == (sizeBeforeMerge + other.getQueue().size());
     }
 }

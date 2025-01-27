@@ -25,14 +25,31 @@ public class FileSystemStorageHandler implements FileStorageHandler {
         if (storageData.peek() == null) return;
         while (!storageData.isEmpty()) {
                 StorageDataEntry current = storageData.poll();
+            String filename = current.getName();
+            String storageId = storage.getIdStorage();
                 if (current == null) continue;
                 // process the node here
                 if(current.getStorageDataType() == StorageDataType.FILE){
-                    // create path by traversing all the way up to root
+                    // Todo : create path by traversing all the way up to root (DONE)
+                    try {
+                        Path filePath = Paths.get(basePath, storageId, filename);
+                        Files.write(filePath, current.getData());
+                    } catch (IOException e) {
+                        String error = "Failed to create file " + filename;
+                        error += " in storage " + storageId + ": " + e.getMessage();
+                        throw new FileStorageException(error);
+                    }
                 }
 
                 if(current.getStorageDataType() == StorageDataType.DIRECTORY){
-                    // create path by traversing all the way up to root
+                    // Todo : create path by traversing all the way up to root (DONE)
+                    try {
+                        Path path = Paths.get(basePath, storageId);
+                        Files.createDirectories(path);
+                    } catch (IOException e) {
+                        String error = "Failed to create storage " + storageId + ": " + e.getMessage();
+                        throw new FileStorageException(error);
+                    }
                     
                 }
 
@@ -70,7 +87,7 @@ public class FileSystemStorageHandler implements FileStorageHandler {
 
     @Override
     public void createFile(Storage storage, FileData file) throws FileStorageException {
-        // Todo : this is replaced by saveToStorage() for provisioning related operations
+        // Todo : this is replaced by saveToStorage() for provisioning related operations (DONE)
         String filename = file.getFileName();
         String storageId = storage.getIdStorage();
 
@@ -118,7 +135,6 @@ public class FileSystemStorageHandler implements FileStorageHandler {
                 if (Files.isRegularFile(path)) {
                     try {
                         current.setData(Files.readAllBytes(path));
-                        current.setName(path.toString());
                         current.setStorageDataType(StorageDataType.FILE);
                         emptyFile.add(current);
                     } catch (IOException e) {
@@ -127,7 +143,6 @@ public class FileSystemStorageHandler implements FileStorageHandler {
                 }
 
                 if (Files.isDirectory(path)) {
-                    current.setName(path.toString());
                     current.setStorageDataType(StorageDataType.DIRECTORY);
                     emptyFile.add(current);
                 }

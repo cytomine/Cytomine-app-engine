@@ -47,7 +47,7 @@ registry:
   url: ${registry.scheme:http}://${registry.host}
 scheduler:
   impl: default # possible values [default]
-  master-url: ${SCHEDULER_MASTER_URL:https://10.22.57.75:16443}
+  master-url: ${SCHEDULER_MASTER_URL:https://192.168.39.196:16443}
   oauth-token: ${SCHEDULER_OAUTH_TOKEN:Z2NVMWZLdmx6eWhnRWJHSUJFbTlQMEhMUytzMllIdWFVbW5YeU96SFF4QT0K}
   username: ${SCHEDULER_USERNAME:admin}
 registry-client:

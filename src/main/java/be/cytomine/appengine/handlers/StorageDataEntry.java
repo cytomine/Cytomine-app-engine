@@ -11,32 +11,14 @@ public class StorageDataEntry {
 
     private byte[] data;
     private String name;
-    private StorageDataEntry parent;
-    private List<StorageDataEntry> children;
     private String storageId;
     private StorageDataType storageDataType;
 
     public StorageDataEntry(byte[] data, String name, String storageId, StorageDataType storageDataType) {
         this.data = data;
         this.name = name;
-        this.children = new ArrayList<>();
         this.storageId = storageId;
         this.storageDataType = storageDataType;
-    }
-
-    public void addChild(StorageDataEntry child) {
-        child.parent = this; // set the parent of the child
-        this.children.add(child);
-    }
-
-    public String getAbsoluteStorageId() {
-        StringBuilder absoluteStorageId = new StringBuilder(storageId);
-        StorageDataEntry current = parent;
-        while (Objects.nonNull(current)) {
-            absoluteStorageId.insert(0, current.getStorageId() + "/");
-            current = current.parent;
-        }
-        return absoluteStorageId.toString();
     }
 
     public StorageDataEntry(byte[] data) {
@@ -45,6 +27,16 @@ public class StorageDataEntry {
 
     public StorageDataEntry(byte[] data, String name) {
         this.data = data;
+        this.name = name;
+    }
+
+    public StorageDataEntry(byte[] data, String name, StorageDataType storageDataType) {
+        this.data = data;
+        this.name = name;
+        this.storageDataType = storageDataType;
+    }
+
+    public StorageDataEntry(String name) {
         this.name = name;
     }
 
