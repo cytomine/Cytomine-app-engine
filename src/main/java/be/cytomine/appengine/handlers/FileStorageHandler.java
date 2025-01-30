@@ -2,7 +2,7 @@ package be.cytomine.appengine.handlers;
 
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
 import be.cytomine.appengine.exceptions.FileStorageException;
-
+// Todo : rename the functions in a clearer way to make sure it accounts for the directories and recursive structure
 public interface FileStorageHandler {
     void createStorage(Storage storage)
         throws FileStorageException;

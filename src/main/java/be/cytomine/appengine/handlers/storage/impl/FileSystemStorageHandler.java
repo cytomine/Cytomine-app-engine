@@ -20,7 +20,6 @@ public class FileSystemStorageHandler implements FileStorageHandler {
     @Value("${storage.base-path}")
     private String basePath;
 
-    // Level-order traversal with levels separated
     public void saveToStorage(Storage storage , StorageData storageData) throws FileStorageException {
         if (storageData.peek() == null) return;
         while (!storageData.isEmpty()) {
@@ -30,7 +29,6 @@ public class FileSystemStorageHandler implements FileStorageHandler {
                 if (current == null) continue;
                 // process the node here
                 if(current.getStorageDataType() == StorageDataType.FILE){
-                    // Todo : create path by traversing all the way up to root (DONE)
                     try {
                         Path filePath = Paths.get(basePath, storageId, filename);
                         Files.write(filePath, current.getData());
@@ -42,7 +40,6 @@ public class FileSystemStorageHandler implements FileStorageHandler {
                 }
 
                 if(current.getStorageDataType() == StorageDataType.DIRECTORY){
-                    // Todo : create path by traversing all the way up to root (DONE)
                     try {
                         Path path = Paths.get(basePath, storageId);
                         Files.createDirectories(path);
@@ -87,7 +84,6 @@ public class FileSystemStorageHandler implements FileStorageHandler {
 
     @Override
     public void createFile(Storage storage, FileData file) throws FileStorageException {
-        // Todo : this is replaced by saveToStorage() for provisioning related operations (DONE)
         String filename = file.getFileName();
         String storageId = storage.getIdStorage();
 
@@ -141,7 +137,8 @@ public class FileSystemStorageHandler implements FileStorageHandler {
                         throw new RuntimeException(e);
                     }
                 }
-
+                // Todo : if we are reading a directory then we need to read it recursively and save it as StorageData
+                // Todo : entry because it could be a subdirectory like a nested collection
                 if (Files.isDirectory(path)) {
                     current.setStorageDataType(StorageDataType.DIRECTORY);
                     emptyFile.add(current);

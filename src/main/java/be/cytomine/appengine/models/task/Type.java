@@ -20,7 +20,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
-
+// Todo : rename the function to make it clear what does the function do and where
 @Entity
 @Table(name = "type")
 @Inheritance(strategy = InheritanceType.JOINED)
@@ -75,12 +75,12 @@ public class Type extends BaseEntity {
             default -> StandardCharsets.UTF_8;
         };
     }
-
+    // Todo : rename
     public JsonNode createTypedParameterResponse(JsonNode provision, Run run) {
         return null;
     }
-
+    // Todo : rename
     public TaskRunParameterValue buildTaskRunParameterValue(StorageData outputData, UUID id, String outputName) {return null;}
-
+    // Todo : rename
     public TaskRunParameterValue buildTaskRunParameterValue(TypePersistence typePersistence) {return null;}
 }

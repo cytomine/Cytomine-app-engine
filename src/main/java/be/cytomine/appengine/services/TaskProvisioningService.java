@@ -246,11 +246,8 @@ public class TaskProvisioningService {
         Input inputForType = inputs.stream().filter(input -> input.getName().equalsIgnoreCase(provision.get("param_name").asText())).findFirst().get();
 
         Storage runStorage = new Storage("task-run-inputs-" + run.getId());
-        // Todo : make this return StorageData (DONE)
         StorageData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision,charset);
-//        FileData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision, charset);
         try {
-            // Todo : use saveToStorage() instead of genereic createFile() (DONE)
             fileStorageHandler.saveToStorage(runStorage, inputProvisionFileData);
         } catch (FileStorageException e) {
             AppEngineError error = ErrorBuilder.buildParamRelatedError(ErrorCode.STORAGE_STORING_INPUT_FAILED, provision.get("param_name").asText(), e.getMessage());
@@ -269,11 +266,8 @@ public class TaskProvisioningService {
         provision.put("value", value);
 
         Storage runStorage = new Storage("task-run-inputs-" + run.getId());
-        // Todo : make this return StorageData (DONE)
         StorageData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision,charset);
-//        FileData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision, charset);
         try {
-            // Todo : use saveToStorage() instead of genereic createFile() (DONE)
             fileStorageHandler.saveToStorage(runStorage, inputProvisionFileData);
         } catch (FileStorageException e) {
             AppEngineError error = ErrorBuilder.buildParamRelatedError(ErrorCode.STORAGE_STORING_INPUT_FAILED, parameterName, e.getMessage());
@@ -314,7 +308,6 @@ public class TaskProvisioningService {
         logger.info("Retrieving Inputs Archive : zipping...");
         ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream);
         for (TypePersistence provision : provisions) {
-            // Todo : readFile() also is designed with parameter -> file assumption .. poll StorageData to build the Zip archive [DONE]
             StorageData provisionFileData = fileStorageHandler.readFile(new StorageData(provision.getParameterName(), "task-run-inputs-" + run.getId()));
             while (!provisionFileData.isEmpty()){
                 StorageDataEntry current = provisionFileData.poll();
@@ -361,7 +354,6 @@ public class TaskProvisioningService {
         logger.info("Retrieving Outputs Archive : zipping...");
         ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream);
         for (TypePersistence result : results) {
-            // Todo : readFile() also is designed with parameter -> file assumption .. poll to build Zip archive [DONE]
             StorageData provisionFileData = fileStorageHandler.readFile(new StorageData(result.getParameterName(), "task-run-outputs-" + run.getId()));
             while (!provisionFileData.isEmpty()){
                 StorageDataEntry current = provisionFileData.poll();
@@ -417,8 +409,6 @@ public class TaskProvisioningService {
             List<TaskRunParameterValue> taskRunParameterValues = new ArrayList<>();
             List<StorageData> contentsOfZip = new ArrayList<>();
             List<Output> remainingUnStoredOutputs = new ArrayList<>(runTaskOutputs);
-            // Todo : here it loops to read files in the archive assuming all parameters are files in the archive [DONE]
-            // Todo : make sure directories are checked against types and properly processed [DONE]
             ZipEntry ze;
             while ((ze = multiPartFileZipInputStream.getNextZipEntry()) != null) {
                 // look for output matching file name
@@ -477,9 +467,6 @@ public class TaskProvisioningService {
                 }
             }
             // processing of files
-            // Todo : reading a single file which does not work with complex types (DONE)
-            // Todo : make sure if a directory exists it matches a type definition and properly mapped to StorageData (DONE)
-
                 for (Output currentOutput : remainingUnStoredOutputs) {
                     Optional<StorageData> currentOutputStorageDataOptional = contentsOfZip.stream().filter(s -> s.peek().getName().equals(currentOutput.getName())).findFirst();
                     StorageData currentOutputStorageData = null;
@@ -493,14 +480,11 @@ public class TaskProvisioningService {
                     // saving to database does not care about the type
                     saveOutput(run, currentOutput, currentOutputStorageData);
                     // saving to the storage does not care about the type
-                    // Todo : should not get raw data byte array .. it should rather get StorageData
                     storeOutputInFileStorage(run, copyForStorageData, outputName);
                     // based on parsed type build the response
                     taskRunParameterValues.add(currentOutput.getType().buildTaskRunParameterValue(copyForOutputResponse, run.getId(), outputName));
 
                 }
-
-
             if (!remainingOutputs.isEmpty()) {
                 AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_MISSING_OUTPUTS);
                 logger.info("Posting Outputs Archive : output invalid (missing outputs)");
@@ -530,7 +514,6 @@ public class TaskProvisioningService {
         logger.info("Posting Outputs Archive : storing in file storage...");
         Storage outputsStorage = new Storage("task-run-outputs-" + run.getId());
         try {
-            // Todo : use saveToStorage() instead of genereic createFile() [DONE]
             fileStorageHandler.saveToStorage(outputsStorage, outputFileData);
         } catch (FileStorageException e) {
             run.setState(TaskRunState.FAILED);
@@ -595,7 +578,6 @@ public class TaskProvisioningService {
 
         String io = type.equals(ParameterType.INPUT) ? "inputs" : "outputs";
         Storage storage = new Storage("task-run-" + io + "-" + runId);
-        // Todo : use StorageData instead of FileData [DONE]
         StorageData data = new StorageData(parameterName, storage.getIdStorage());
 
         logger.info("Get IO file from storage: read file " + parameterName + " from storage...");
