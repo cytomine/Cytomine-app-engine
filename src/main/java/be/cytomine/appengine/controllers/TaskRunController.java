@@ -31,10 +31,15 @@ public class TaskRunController {
 
     @PutMapping(value = "/task-runs/{run_id}/input-provisions/{param_name}", consumes = MediaType.APPLICATION_JSON_VALUE)
     @ResponseStatus(code = HttpStatus.OK)
-    public ResponseEntity<?> provisionJson(@PathVariable String run_id, @PathVariable String param_name, @RequestBody JsonNode provision) throws ProvisioningException {
+    public ResponseEntity<?> provisionJson(
+        @PathVariable("run_id") String runId,
+        @PathVariable("param_name") String parameterName,
+        @RequestBody JsonNode provision
+    ) throws ProvisioningException {
         log.info("/task-runs/{run_id}/input-provisions/{param_name} JSON PUT");
-        JsonNode provisioned = taskRunService.provisionRunParameter(provision, run_id);
+        JsonNode provisioned = taskRunService.provisionRunParameter(provision, runId);
         log.info("/task-runs/{run_id}/input-provisions/{param_name} JSON PUT Ended");
+
         return ResponseEntity.ok(provisioned);
     }
 
@@ -46,7 +51,6 @@ public class TaskRunController {
         @RequestParam("file") MultipartFile file
     ) throws IOException, ProvisioningException {
         log.info("/task-runs/{run_id}/input-provisions/{param_name} File PUT");
-
         JsonNode provisioned = taskRunService.provisionRunParameter(parameterName, runId, file.getBytes());
         log.info("/task-runs/{run_id}/input-provisions/{param_name} File PUT Ended");
 
