@@ -52,80 +52,61 @@ public class TaskProvisioningService {
     @Value("${storage.input.charset}")
     private String charset;
 
-    public JsonNode provisionRunParameter(JsonNode provision, String runId) throws ProvisioningException {
-        log.info("ProvisionParameter : finding associated task run...");
+    public JsonNode provisionRunParameter(String runId, String name, Object value) throws ProvisioningException {
+        log.info("ProvisionParameter: finding associated task run...");
         Run run = getRunIfValid(runId);
-        log.info("ProvisionParameter : found");
-        log.info("ProvisionParameter : validating provision against parameter type definition...");
+        log.info("ProvisionParameter: found");
+
+        log.info("ProvisionParameter: validating provision against parameter type definition...");
         GenericParameterProvision genericParameterProvision = new GenericParameterProvision();
-        try {
-            ObjectMapper mapper = new ObjectMapper();
-            genericParameterProvision = mapper.treeToValue(provision, GenericParameterProvision.class);
-            genericParameterProvision.setRunId(runId);
 
-            validateProvisionValuesAgainstTaskType(genericParameterProvision, run);
-        } catch (TypeValidationException e) {
-            ParameterError parameterError = new ParameterError(provision.get("param_name").asText());
-            AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_PARAMETER_DOES_NOT_EXIST, parameterError);
-            throw new ProvisioningException(error);
-        } catch (JsonProcessingException e) {
-            log.info("ProvisionParameter : provision is not valid");
-            ParameterError parameterError = new ParameterError(genericParameterProvision.getParameterName());
-            AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_JSON_PROCESSING_ERROR, parameterError);
-            throw new ProvisioningException(error);
-        }
-        log.info("ProvisionParameter : provision is valid");
-        log.info("ProvisionParameter : storing provision to storage...");
-        saveProvisionInStorage(provision, run);
-        log.info("ProvisionParameter : stored");
-        log.info("ProvisionParameter : saving provision in database...");
-        saveInDatabase(provision, run);
-        log.info("ProvisionParameter : saved");
-
-        if (run.getTask().getInputs().size() == 1) {
-            changeStateToProvisioned(run);
+        if (value instanceof JsonNode) {
+            try {
+                ObjectMapper mapper = new ObjectMapper();
+                genericParameterProvision = mapper.treeToValue((JsonNode) value, GenericParameterProvision.class);
+            } catch (JsonProcessingException e) {
+                log.info("ProvisionParameter: provision is not valid");
+                AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_JSON_PROCESSING_ERROR, new ParameterError(name));
+                throw new ProvisioningException(error);
+            }
+        } else if (value instanceof byte[]) {
+            genericParameterProvision.setParameterName(name);
+            genericParameterProvision.setValue(value);
         }
 
-        return getInputParameterType(provision, run).createTypedParameterResponse(provision, run);
-    }
-
-    public JsonNode provisionRunParameter(String parameterName, String runId, byte[] value) throws ProvisioningException {
-        log.info("ProvisionParameter : finding associated task run...");
-        Run run = getRunIfValid(runId);
-        log.info("ProvisionParameter : found");
-
-        log.info("ProvisionParameter : validating provision against parameter type definition...");
-        GenericParameterProvision genericParameterProvision = new GenericParameterProvision();
-        genericParameterProvision.setParameterName(parameterName);
-        genericParameterProvision.setValue(value);
         genericParameterProvision.setRunId(runId);
 
         try {
             validateProvisionValuesAgainstTaskType(genericParameterProvision, run);
         } catch (TypeValidationException e) {
-            ParameterError parameterError = new ParameterError(parameterName);
-            AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_PARAMETER_DOES_NOT_EXIST, parameterError);
+            AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_PARAMETER_DOES_NOT_EXIST, new ParameterError(name));
             throw new ProvisioningException(error);
         }
-        log.info("ProvisionParameter : provision is valid");
+        log.info("ProvisionParameter: provision is valid");
 
-        log.info("ProvisionParameter : storing provision to storage...");
-        saveProvisionInStorage(parameterName, value, run);
-        log.info("ProvisionParameter : stored");
+        JsonNode provision = null;
+        if (value instanceof JsonNode) {
+            provision = (JsonNode) value;
+        } else if (value instanceof byte[]) {
+            ObjectNode objectNode = (new ObjectMapper()).createObjectNode();
+            objectNode.put("param_name", name);
+            objectNode.put("value", (byte[]) value);
+            provision = objectNode;
+        }
 
-        log.info("ProvisionParameter : saving provision in database...");
-        saveInDatabase(parameterName, value, run);
-        log.info("ProvisionParameter : saved");
+        log.info("ProvisionParameter: storing provision to storage...");
+        saveProvisionInStorage(name, provision, run);
+        log.info("ProvisionParameter: stored");
+
+        log.info("ProvisionParameter: saving provision in database...");
+        saveInDatabase(name, provision, run);
+        log.info("ProvisionParameter: saved");
 
         if (run.getTask().getInputs().size() == 1) {
             changeStateToProvisioned(run);
         }
 
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode provision = mapper.createObjectNode();
-        provision.put("param_name", parameterName);
-
-        return getInputParameterType(parameterName, run).createTypedParameterResponse(provision, run);
+        return getInputParameterType(name, run).createTypedParameterResponse(provision, run);
     }
 
     private void changeStateToProvisioned(Run run) {
@@ -174,17 +155,18 @@ public class TaskProvisioningService {
 
         for (JsonNode provision : provisions) {
             log.info("ProvisionMultipleParameter : storing provision to storage...");
+            String parameterName = provision.get("param_name").asText();
             try {
-                saveProvisionInStorage(provision, run);
+                saveProvisionInStorage(parameterName, provision, run);
             } catch (ProvisioningException e) {
                 multipleErrors.add(e.getError());
                 continue;
             }
             log.info("ProvisionMultipleParameter : stored");
             log.info("ProvisionMultipleParameter : saving provision in database...");
-            saveInDatabase(provision, run);
+            saveInDatabase(parameterName, provision, run);
             log.info("ProvisionMultipleParameter : saved");
-            JsonNode responseItem = getInputParameterType(provision, run).createTypedParameterResponse(provision, run);
+            JsonNode responseItem = getInputParameterType(parameterName, run).createTypedParameterResponse(provision, run);
             response.add(responseItem);
         }
         if (!multipleErrors.isEmpty()) {
@@ -199,14 +181,7 @@ public class TaskProvisioningService {
     }
 
     @NotNull
-    private void saveInDatabase(JsonNode provision, Run run) {
-        Set<Input> inputs = run.getTask().getInputs();
-        Input inputForType = inputs.stream().filter(input -> input.getName().equalsIgnoreCase(provision.get("param_name").asText())).findFirst().get();
-        inputForType.getType().persistProvision(provision, run.getId());
-    }
-
-    @NotNull
-    private void saveInDatabase(String parameterName, byte[] value, Run run) {
+    private void saveInDatabase(String parameterName, JsonNode provision, Run run) {
         Set<Input> inputs = run.getTask().getInputs();
         Input inputForType = inputs
             .stream()
@@ -214,20 +189,9 @@ public class TaskProvisioningService {
             .findFirst()
             .get();
 
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode provision = mapper.createObjectNode();
-        provision.put("param_name", parameterName);
-        provision.put("value", value);
-
         inputForType
             .getType()
             .persistProvision(provision, run.getId());
-    }
-
-    private Type getInputParameterType(JsonNode provision, Run run) {
-        Set<Input> inputs = run.getTask().getInputs();
-        Input inputForType = inputs.stream().filter(input -> input.getName().equalsIgnoreCase(provision.get("param_name").asText())).findFirst().get();
-        return inputForType.getType();
     }
 
     private Type getInputParameterType(String parameterName, Run run) {
@@ -240,34 +204,18 @@ public class TaskProvisioningService {
         return inputForType.getType();
     }
 
-    private void saveProvisionInStorage(JsonNode provision, Run run) throws ProvisioningException {
+    private void saveProvisionInStorage(String parameterName, JsonNode provision, Run run) throws ProvisioningException {
         Set<Input> inputs = run.getTask().getInputs();
-        Input inputForType = inputs.stream().filter(input -> input.getName().equalsIgnoreCase(provision.get("param_name").asText())).findFirst().get();
+        Input inputForType = inputs
+            .stream()
+            .filter(input -> input.getName().equalsIgnoreCase(parameterName))
+            .findFirst()
+            .get();
 
         Storage runStorage = new Storage("task-run-inputs-" + run.getId());
-        FileData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision, charset);
+        FileData provisionData = inputForType.getType().mapToStorageFileData(provision, charset);
         try {
-            fileStorageHandler.createFile(runStorage, inputProvisionFileData);
-        } catch (FileStorageException e) {
-            AppEngineError error = ErrorBuilder.buildParamRelatedError(ErrorCode.STORAGE_STORING_INPUT_FAILED, provision.get("param_name").asText(), e.getMessage());
-            throw new ProvisioningException(error);
-
-        }
-    }
-
-    private void saveProvisionInStorage(String parameterName, byte[] value, Run run) throws ProvisioningException {
-        Set<Input> inputs = run.getTask().getInputs();
-        Input inputForType = inputs.stream().filter(input -> input.getName().equalsIgnoreCase(parameterName)).findFirst().get();
-
-        ObjectMapper mapper = new ObjectMapper();
-        ObjectNode provision = mapper.createObjectNode();
-        provision.put("param_name", parameterName);
-        provision.put("value", value);
-
-        Storage runStorage = new Storage("task-run-inputs-" + run.getId());
-        FileData inputProvisionFileData = inputForType.getType().mapToStorageFileData(provision, charset);
-        try {
-            fileStorageHandler.createFile(runStorage, inputProvisionFileData);
+            fileStorageHandler.createFile(runStorage, provisionData);
         } catch (FileStorageException e) {
             AppEngineError error = ErrorBuilder.buildParamRelatedError(ErrorCode.STORAGE_STORING_INPUT_FAILED, parameterName, e.getMessage());
             throw new ProvisioningException(error);
