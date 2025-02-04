@@ -105,7 +105,11 @@ public class KubernetesScheduler implements SchedulerHandler {
         String unzipInputs = "unzip -o inputs.zip -d " + task.getInputFolder();
         String sendOutputs = "curl -X POST -F 'outputs=@outputs.zip' " + url + "/outputs.zip";
         String zipOutputs = "zip -rj outputs.zip " + task.getOutputFolder();
-        String wait = "while [ ! -f /outputs/finished ]; do sleep 2; done; rm /outputs/finished";
+        String wait = "export TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token); ";
+        wait += "while ! curl -k -H \"Authorization: Bearer $TOKEN\" ";
+        wait += "https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT_HTTPS}/api/v1/namespaces/default/pods/${HOSTNAME}/status ";
+        wait += "| jq '.status | .containerStatuses[] | select(.name == \"task\") | .state | keys[0]' ";
+        wait += "| grep -q -F \"terminated\"; do sleep 2; done";
         String and = " && ";
 
         Map<String, String> labels = new HashMap<>() {{
@@ -143,7 +147,6 @@ public class KubernetesScheduler implements SchedulerHandler {
                 .withName("task")
                 .withImage(imageName)
                 .withImagePullPolicy("IfNotPresent")
-                .withTerminationMessagePath("/outputs/finished")
 
                 // Mount volumes for inputs and outputs
                 .addNewVolumeMount()
