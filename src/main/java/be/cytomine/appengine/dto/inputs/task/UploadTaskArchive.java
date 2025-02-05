@@ -26,16 +26,16 @@ public class UploadTaskArchive {
     public UploadTaskArchive(byte[] descriptorFile, File dockerImage) throws BundleArchiveException {
         this.descriptorFile = descriptorFile;
         this.dockerImage = dockerImage;
-        descriptorFileAsJson = convertFromYamlToJson();
+        this.descriptorFileAsJson = convertFromYamlToJson(descriptorFile);
     }
 
-    private JsonNode convertFromYamlToJson() throws BundleArchiveException {
+    public static JsonNode convertFromYamlToJson(byte[] descriptorFile) throws BundleArchiveException {
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 
         try {
             return mapper.readTree(descriptorFile);
         } catch (IOException e) {
-            log.info("UploadTask: failed to convert descriptor.yml to json [" + e.getMessage() + "]");
+            log.error("UploadTask: failed to convert descriptor.yml to json [" + e.getMessage() + "]");
             throw new BundleArchiveException(e);
         }
     }
