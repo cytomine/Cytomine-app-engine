@@ -57,27 +57,23 @@ public class TaskValidationService {
 
     private void checkManifestJsonExists(UploadTaskArchive task) throws ValidationException {
         try (TarArchiveInputStream tais = new TarArchiveInputStream(new FileInputStream(task.getDockerImage()))) {
-            boolean manifestNotFound = true;
             TarArchiveEntry tarArchiveEntry;
 
             while ((tarArchiveEntry = tais.getNextTarEntry()) != null) {
                 String name = tarArchiveEntry.getName();
                 if (name.equalsIgnoreCase("manifest.json")) {
-                    manifestNotFound = false;
-                    break;
+                    return;
                 }
-            }
-
-            if (manifestNotFound) {
-                log.info("Validation error [manifest.json does not exist]");
-                AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_DOCKER_IMAGE_MANIFEST_MISSING);
-                throw new ValidationException(error);
             }
         } catch (IOException e) {
             log.error("Failed to check for manifest.json in the Docker image", e);
             AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_DOCKER_IMAGE_EXTRACTION_FAILED);
             throw new ValidationException(error);
         }
+
+        log.info("Validation error [manifest.json does not exist]");
+        AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_DOCKER_IMAGE_MANIFEST_MISSING);
+        throw new ValidationException(error);
     }
 
     public void validateDescriptorFile(UploadTaskArchive task) throws ValidationException {
