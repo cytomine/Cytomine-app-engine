@@ -18,7 +18,6 @@ import be.cytomine.appengine.dto.responses.errors.AppEngineError;
 import be.cytomine.appengine.dto.responses.errors.ErrorBuilder;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.BundleArchiveException;
-import be.cytomine.appengine.exceptions.ValidationException;
 
 @Slf4j
 @Component
@@ -39,7 +38,7 @@ public class ArchiveUtils {
         }
     }
 
-    public UploadTaskArchive readArchive(MultipartFile archive) throws ValidationException, BundleArchiveException {
+    public UploadTaskArchive readArchive(MultipartFile archive) throws BundleArchiveException {
         if (isZip(archive)) {
             return readZipArchive(archive);
         }
@@ -48,7 +47,7 @@ public class ArchiveUtils {
         throw new BundleArchiveException(error);
     }
 
-    public UploadTaskArchive readZipArchive(MultipartFile archive) throws BundleArchiveException, ValidationException {
+    public UploadTaskArchive readZipArchive(MultipartFile archive) throws BundleArchiveException {
         byte[] descriptorData = getDescriptorFileFromZip(archive);
         File imageData = getDockerImageFromZip(archive, getCustomImageName(descriptorData));
 
