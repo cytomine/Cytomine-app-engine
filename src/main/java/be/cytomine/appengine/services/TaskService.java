@@ -84,7 +84,7 @@ public class TaskService {
         }
 
         log.info("UploadTask: pushing task image...");
-        DockerImage image = new DockerImage(uploadTaskArchive.getDockerImage() , taskIdentifiers.getImageRegistryCompliantName());
+        DockerImage image = new DockerImage(uploadTaskArchive.getDockerImage(), taskIdentifiers.getImageRegistryCompliantName());
         try {
             registryHandler.pushImage(image);
         } catch (RegistryException e) {
@@ -123,6 +123,8 @@ public class TaskService {
         log.info("UploadTask: saving task...");
         taskRepository.save(task);
         log.info("UploadTask: task saved");
+
+        uploadTaskArchive.getDockerImage().delete();
 
         return Optional.of(makeTaskDescription(task));
     }
