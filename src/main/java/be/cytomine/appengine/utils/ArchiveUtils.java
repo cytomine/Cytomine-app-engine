@@ -56,7 +56,7 @@ public class ArchiveUtils {
 
     private String getCustomImageName(byte[] descriptorData) {
         try {
-            return UploadTaskArchive.convertFromYamlToJson(descriptorData)
+            return DescriptorHelper.parseDescriptor(descriptorData)
                 .get("configuration")
                 .get("image")
                 .get("file")
