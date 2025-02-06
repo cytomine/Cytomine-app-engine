@@ -1,5 +1,6 @@
 package be.cytomine.appengine.services;
 
+import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -56,7 +57,7 @@ public class TaskValidationService {
     }
 
     private void checkManifestJsonExists(UploadTaskArchive task) throws ValidationException {
-        try (TarArchiveInputStream tais = new TarArchiveInputStream(new FileInputStream(task.getDockerImage()))) {
+        try (TarArchiveInputStream tais = new TarArchiveInputStream(new BufferedInputStream(new FileInputStream(task.getDockerImage())))) {
             TarArchiveEntry tarArchiveEntry;
 
             while ((tarArchiveEntry = tais.getNextTarEntry()) != null) {

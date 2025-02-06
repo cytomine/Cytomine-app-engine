@@ -97,6 +97,8 @@ public class TaskService {
                 AppEngineError error = ErrorBuilder.build(ErrorCode.REGISTRY_PUSHING_TASK_IMAGE_FAILED);
                 throw new TaskServiceException(error);
             }
+        } finally {
+            uploadTaskArchive.getDockerImage().delete();
         }
         log.info("UploadTask: image pushed to registry");
 
@@ -123,8 +125,6 @@ public class TaskService {
         log.info("UploadTask: saving task...");
         taskRepository.save(task);
         log.info("UploadTask: task saved");
-
-        uploadTaskArchive.getDockerImage().delete();
 
         return Optional.of(makeTaskDescription(task));
     }

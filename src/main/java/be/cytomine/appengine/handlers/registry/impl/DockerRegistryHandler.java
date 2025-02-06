@@ -39,7 +39,7 @@ public class DockerRegistryHandler implements RegistryHandler {
 
     @Override
     public void pushImage(DockerImage image) throws RegistryException {
-        log.info("Image Registry Handler: pushing image...");
+        log.info("Docker Registry Handler: pushing image...");
 
         String imageName = image.getImageName();
         File imageData = image.getImageData();

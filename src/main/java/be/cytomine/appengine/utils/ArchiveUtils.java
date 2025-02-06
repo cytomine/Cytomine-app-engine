@@ -1,6 +1,5 @@
 package be.cytomine.appengine.utils;
 
-import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -105,8 +104,8 @@ public class ArchiveUtils {
                 if (entry.getName().equalsIgnoreCase(imageName)) {
                     File dockerImage = File.createTempFile("docker-image-", ".tar");
 
-                    try (BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(dockerImage))) {
-                        IOUtils.copy(zais, bos);
+                    try (FileOutputStream fos = new FileOutputStream(dockerImage)) {
+                        IOUtils.copyLarge(zais, fos);
                     }
 
                     log.info("ArchiveUtils: Image successfully extracted");
