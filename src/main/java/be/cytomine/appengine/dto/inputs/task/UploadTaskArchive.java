@@ -7,7 +7,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import be.cytomine.appengine.exceptions.BundleArchiveException;
 import be.cytomine.appengine.utils.DescriptorHelper;
 
 @Setter
@@ -21,7 +20,7 @@ public class UploadTaskArchive {
 
     private JsonNode descriptorFileAsJson;
 
-    public UploadTaskArchive(byte[] descriptorFile, File dockerImage) throws BundleArchiveException {
+    public UploadTaskArchive(byte[] descriptorFile, File dockerImage) {
         this.descriptorFile = descriptorFile;
         this.dockerImage = dockerImage;
         this.descriptorFileAsJson = DescriptorHelper.parseDescriptor(descriptorFile);
