@@ -4,6 +4,7 @@ import java.util.HashMap;
 
 import be.cytomine.appengine.exceptions.UndefinedCodeException;
 
+@SuppressWarnings("checkstyle:LineLength")
 public class ErrorDefinitions {
     private static final HashMap<ErrorCode, MessageCode> codes;
 
