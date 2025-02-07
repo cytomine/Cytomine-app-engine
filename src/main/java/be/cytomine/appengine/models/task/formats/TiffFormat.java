@@ -79,9 +79,9 @@ public class TiffFormat implements FileFormat {
             .orElse(null);
 
         try {
-            boolean isRgb = samplesPerPixel.getIntValue() == 3;
+            boolean isRGB = samplesPerPixel.getIntValue() == 3;
             boolean isTiled = tileWidth != null && tileWidth.getIntValue() != 0;
-            return isRgb && !isTiled;
+            return isRGB && !isTiled;
         } catch (ImagingException e) {
             return false;
         }
