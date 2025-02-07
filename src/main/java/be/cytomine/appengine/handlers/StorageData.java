@@ -25,9 +25,7 @@ public class StorageData {
     }
     // useful to create files in StorageData
     public StorageData(byte[] data, String name) {
-        StorageDataEntry root = new StorageDataEntry(data);
-        root.setStorageDataType(StorageDataType.FILE);
-        root.setName(name);
+        StorageDataEntry root = new StorageDataEntry(data , name , StorageDataType.FILE);
         queue = new LinkedList<>();
         queue.add(root);
     }
@@ -49,6 +47,10 @@ public class StorageData {
         StorageDataEntry root = new StorageDataEntry(parameterName, storageId);
         queue = new LinkedList<>();
         queue.add(root);
+    }
+
+    public StorageData() {
+        queue = new LinkedList<>();
     }
 
     public StorageDataEntry peek() {

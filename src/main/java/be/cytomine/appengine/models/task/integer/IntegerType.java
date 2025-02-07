@@ -17,7 +17,6 @@ import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.springframework.beans.factory.annotation.Value;
 
 
 import java.util.UUID;
@@ -112,7 +111,7 @@ public class IntegerType extends Type {
     public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         IntegerPersistenceRepository integerPersistenceRepository = AppEngineApplicationContext.getBean(IntegerPersistenceRepository.class);
         IntegerPersistence result = integerPersistenceRepository.findIntegerPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        String output = new String(outputValue.peek().getData(), getStorageCharset("UTF_8"));
+        String output = new String(outputValue.peek().getData(), getStorageCharset());
         String trimmedOutput = output.trim();
         if (result == null) {
             result = new IntegerPersistence();
@@ -129,10 +128,10 @@ public class IntegerType extends Type {
     }
 
     @Override
-    public StorageData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision) {
         String value = provision.get("value").asText();
         String parameterName = provision.get("param_name").asText();
-        byte[] inputFileData = value.getBytes(getStorageCharset("UTF_8"));
+        byte[] inputFileData = value.getBytes(getStorageCharset());
         StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName , StorageDataType.FILE);
         return new StorageData(storageDataEntry);
 //        return new FileData(inputFileData, parameterName);
@@ -151,7 +150,7 @@ public class IntegerType extends Type {
 
     @Override
     public IntegerValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
-        String outputValue = new String(output.poll().getData(), getStorageCharset("UTF_8"));
+        String outputValue = new String(output.poll().getData(), getStorageCharset());
         String trimmedOutput = outputValue.trim();
         IntegerValue integerValue = new IntegerValue();
         integerValue.setParameterName(outputName);

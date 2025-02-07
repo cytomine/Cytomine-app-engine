@@ -180,7 +180,7 @@ public class ImageType extends Type {
     }
 
     @Override
-    public StorageData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision) {
         String parameterName = provision.get("param_name").asText();
         byte[] inputFileData = null;
         try {

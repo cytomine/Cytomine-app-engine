@@ -2,7 +2,6 @@ package be.cytomine.appengine.models.task;
 
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.exceptions.TypeValidationException;
-import be.cytomine.appengine.handlers.FileData;
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.BaseEntity;
 
@@ -13,7 +12,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.persistence.*;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import org.springframework.beans.factory.annotation.Value;
 
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
@@ -33,12 +31,10 @@ public class Type extends BaseEntity {
     private UUID identifier;
     private String id;  // as found in the descriptor
 
+    private String charset;
+
     @ElementCollection
     private List<String> constraints; // used to track which constraints are defined for this type object
-
-    @Value("${storage.input.charset}")
-    @Transient
-    private String charset;
 
     /**
      * Parse a string representation of a list of string to a list of strings
@@ -61,11 +57,11 @@ public class Type extends BaseEntity {
 
     public void persistResult(Run runOptional, Output currentOutput, StorageData outputValue){};
 
-    public StorageData mapToStorageFileData(JsonNode provision , String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision) {
         return null;
     }
 
-    public Charset getStorageCharset(String charset) {
+    public Charset getStorageCharset() {
         return switch (charset.toUpperCase()) {
             case "US_ASCII" -> StandardCharsets.US_ASCII;
             case "ISO_8859_1" -> StandardCharsets.ISO_8859_1;

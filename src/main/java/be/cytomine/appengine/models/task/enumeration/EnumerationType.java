@@ -94,7 +94,7 @@ public class EnumerationType extends Type {
     public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         EnumerationPersistenceRepository enumerationPersistenceRepository = AppEngineApplicationContext.getBean(EnumerationPersistenceRepository.class);
         EnumerationPersistence result = enumerationPersistenceRepository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        String output = new String(outputValue.poll().getData(), getStorageCharset("UTF_8"));
+        String output = new String(outputValue.poll().getData(), getStorageCharset());
         String trimmedOutput = output.trim();
         if (result == null) {
             result = new EnumerationPersistence();
@@ -111,13 +111,12 @@ public class EnumerationType extends Type {
     }
 
     @Override
-    public StorageData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision) {
         String value = provision.get("value").asText();
         String parameterName = provision.get("param_name").asText();
-        byte[] inputFileData = value.getBytes(getStorageCharset("UTF_8"));
+        byte[] inputFileData = value.getBytes(getStorageCharset());
         StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName , StorageDataType.FILE);
         return new StorageData(storageDataEntry);
-//        return new FileData(inputFileData, parameterName);
     }
 
 
@@ -135,7 +134,7 @@ public class EnumerationType extends Type {
 
     @Override
     public EnumerationValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
-        String outputValue = new String(output.poll().getData(), getStorageCharset("UTF_8"));
+        String outputValue = new String(output.poll().getData(), getStorageCharset());
         String trimmedOutput = outputValue.trim();
 
         EnumerationValue enumerationValue = new EnumerationValue();

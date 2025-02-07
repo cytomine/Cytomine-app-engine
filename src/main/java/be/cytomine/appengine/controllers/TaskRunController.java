@@ -2,7 +2,6 @@ package be.cytomine.appengine.controllers;
 
 import be.cytomine.appengine.dto.inputs.task.*;
 import be.cytomine.appengine.exceptions.*;
-import be.cytomine.appengine.handlers.FileData;
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.services.TaskProvisioningService;

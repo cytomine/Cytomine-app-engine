@@ -250,7 +250,7 @@ public class TestTaskBuilder {
         input.setDisplayName(inputValue.get("display_name").textValue());
         input.setDescription(inputValue.get("description").textValue());
         // use type factory to generate the correct type
-        input.setType(TypeFactory.createType(inputValue));
+        input.setType(TypeFactory.createType(inputValue , "UTF_8"));
         switch (TypeFactory.getTypeId(inputValue.get("type"))) {
           case "boolean":
               input.setDefaultValue("false");
@@ -283,7 +283,7 @@ public class TestTaskBuilder {
               output.setDisplayName(inputValue.get("display_name").textValue());
               output.setDescription(inputValue.get("description").textValue());
               // use type factory to generate the correct type
-              output.setType(TypeFactory.createType(inputValue));
+              output.setType(TypeFactory.createType(inputValue , "UTF_8"));
 
               outputs.add(output);
 

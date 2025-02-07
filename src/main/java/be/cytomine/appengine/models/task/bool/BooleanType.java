@@ -65,7 +65,7 @@ public class BooleanType extends Type {
     public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         BooleanPersistenceRepository booleanPersistenceRepository = AppEngineApplicationContext.getBean(BooleanPersistenceRepository.class);
         BooleanPersistence result = booleanPersistenceRepository.findBooleanPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        String output = new String(outputValue.poll().getData(), getStorageCharset("UTF_8"));
+        String output = new String(outputValue.poll().getData(), getStorageCharset());
         String trimmedOutput = output.trim();
         if (result == null) {
             result = new BooleanPersistence();
@@ -82,13 +82,12 @@ public class BooleanType extends Type {
     }
 
     @Override
-    public StorageData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision) {
         String value = provision.get("value").asText();
         String parameterName = provision.get("param_name").asText();
-        byte[] inputFileData = value.getBytes(getStorageCharset("UTF_8"));
+        byte[] inputFileData = value.getBytes(getStorageCharset());
         StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName , StorageDataType.FILE);
         return new StorageData(storageDataEntry);
-//        return new FileData(inputFileData, parameterName);
     }
 
     @Override
@@ -104,7 +103,7 @@ public class BooleanType extends Type {
 
     @Override
     public TaskRunParameterValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
-        String outputValue = new String(output.poll().getData(), getStorageCharset("UTF_8"));
+        String outputValue = new String(output.poll().getData(), getStorageCharset());
         String trimmedOutput = outputValue.trim();
 
         BooleanValue booleanValue = new BooleanValue();

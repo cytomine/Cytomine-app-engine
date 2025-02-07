@@ -5,8 +5,7 @@ import be.cytomine.appengine.dto.handlers.filestorage.Storage;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.dto.responses.errors.ErrorDefinitions;
 import be.cytomine.appengine.exceptions.FileStorageException;
-import be.cytomine.appengine.handlers.FileData;
-import be.cytomine.appengine.handlers.FileStorageHandler;
+import be.cytomine.appengine.handlers.StorageHandler;
 import be.cytomine.appengine.handlers.RegistryHandler;
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.task.*;
@@ -76,7 +75,7 @@ public class UploadTaskStepDefinitions {
     DefaultApi appEngineAPI;
 
     @Autowired
-    FileStorageHandler fileStorageHandler;
+    StorageHandler fileStorageHandler;
 
     @Value("${app-engine.api_prefix}")
     private String apiPrefix;
@@ -189,7 +188,7 @@ public class UploadTaskStepDefinitions {
         String bucket = uploaded.getStorageReference();
         String object = "descriptor.yml";
         StorageData descriptorFileData = new StorageData(object, bucket);
-        StorageData descriptor = fileStorageHandler.readFile(descriptorFileData);
+        StorageData descriptor = fileStorageHandler.readStorageData(descriptorFileData);
         Assertions.assertNotNull(descriptor);
     }
 
@@ -250,8 +249,8 @@ public class UploadTaskStepDefinitions {
                 JsonNode descriptor = mapper.readTree(fileInputStream);
                 ((ObjectNode) descriptor).put("name_short", "must_not_have_changed");
 
-                FileData fileData = new FileData(mapper.writeValueAsBytes(descriptor), "descriptor.yml");
-                fileStorageHandler.createFile(storage, fileData);
+                StorageData fileData = new StorageData(mapper.writeValueAsBytes(descriptor), "descriptor.yml");
+                fileStorageHandler.saveStorageData(storage, fileData);
             }
         } catch (IOException | FileStorageException e) {
             throw new RuntimeException(e);
@@ -283,7 +282,7 @@ public class UploadTaskStepDefinitions {
         // and storage service
         String object = "descriptor.yml";
         StorageData fileData = new StorageData(object, persistedTask.getStorageReference());
-        fileData = fileStorageHandler.readFile(fileData);
+        fileData = fileStorageHandler.readStorageData(fileData);
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         JsonNode descriptor = mapper.readTree(fileData.peek().getData());
 

@@ -2,9 +2,6 @@ package be.cytomine.appengine.handlers;
 
 import lombok.Data;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Objects;
 
 @Data
 public class StorageDataEntry {
@@ -36,8 +33,14 @@ public class StorageDataEntry {
         this.storageDataType = storageDataType;
     }
 
+    public StorageDataEntry( String name, StorageDataType storageDataType) {
+        this.name = name;
+        this.storageDataType = storageDataType;
+    }
+
     public StorageDataEntry(String name) {
         this.name = name;
+        this.storageDataType = StorageDataType.DIRECTORY;
     }
 
     public StorageDataEntry(String name, String storageId) {

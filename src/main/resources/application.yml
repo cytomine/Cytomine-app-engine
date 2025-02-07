@@ -36,7 +36,7 @@ spring:
     serialization:
       fail-on-empty-beans: false
 storage:
-  base-path: ${STORAGE_BASE_PATH:/home/siddig-hamed//data}
+  base-path: ${STORAGE_BASE_PATH:/data}
   impl: ${STORAGE_IMPL:filesystem} # possible values [filesystem]
   input:
     charset: UTF_8 # possible values [UTF_8,US_ASCII,ISO_8859_1,UTF_16LE,UTF_16BE,UTF_16] and UTF_8 is default
@@ -47,7 +47,7 @@ registry:
   url: ${registry.scheme:http}://${registry.host}
 scheduler:
   impl: default # possible values [default]
-  master-url: ${SCHEDULER_MASTER_URL:scheduler}
+  master-url: ${SCHEDULER_MASTER_URL:http://scheduler:16443}
   oauth-token: ${SCHEDULER_OAUTH_TOKEN:token}
   username: ${SCHEDULER_USERNAME:admin}
 registry-client:
