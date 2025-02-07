@@ -7,7 +7,6 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import lombok.Data;
@@ -40,12 +39,13 @@ public class FileType extends Type {
 
     public void setConstraint(FileTypeConstraint constraint, JsonNode value) {
         switch (constraint) {
-        case FORMATS:
-            this.setFormats(parse(value.toString()));
-            break;
-        case MAX_FILE_SIZE:
-            this.setMaxFileSize(value.asText());
-            break;
+            case FORMATS:
+                this.setFormats(parse(value.toString()));
+                break;
+            case MAX_FILE_SIZE:
+                this.setMaxFileSize(value.asText());
+                break;
+            default:
         }
     }
 
@@ -59,7 +59,11 @@ public class FileType extends Type {
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
         String parameterName = provision.get("param_name").asText();
-        FilePersistenceRepository filePersistenceRepository = AppEngineApplicationContext.getBean(FilePersistenceRepository.class);
+        FilePersistenceRepository filePersistenceRepository = AppEngineApplicationContext.getBean(
+            FilePersistenceRepository.class
+        );
+
+        @SuppressWarnings("checkstyle:LineLength")
         FilePersistence persistedProvision = filePersistenceRepository.findFilePersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision != null) {
             return;
@@ -76,7 +80,11 @@ public class FileType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        FilePersistenceRepository filePersistenceRepository = AppEngineApplicationContext.getBean(FilePersistenceRepository.class);
+        FilePersistenceRepository filePersistenceRepository = AppEngineApplicationContext.getBean(
+            FilePersistenceRepository.class
+        );
+
+        @SuppressWarnings("checkstyle:LineLength")
         FilePersistence result = filePersistenceRepository.findFilePersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result != null) {
             return;
@@ -96,7 +104,9 @@ public class FileType extends Type {
         byte[] inputFileData = null;
         try {
             inputFileData = provision.get("value").binaryValue();
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return new FileData(inputFileData, parameterName);
     }
 

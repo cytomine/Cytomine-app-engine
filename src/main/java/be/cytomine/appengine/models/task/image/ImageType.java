@@ -9,6 +9,11 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Transient;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import be.cytomine.appengine.dto.inputs.task.types.image.ImageTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.image.ImageValue;
@@ -25,11 +30,6 @@ import be.cytomine.appengine.models.task.formats.FileFormat;
 import be.cytomine.appengine.repositories.image.ImagePersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import be.cytomine.appengine.utils.units.Unit;
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Transient;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 @Entity
 @Data
@@ -65,6 +65,7 @@ public class ImageType extends Type {
             case MAX_HEIGHT:
                 this.setMaxHeight(value.asInt());
                 break;
+            default:
         }
     }
 
@@ -75,15 +76,15 @@ public class ImageType extends Type {
         }
 
         List<FileFormat> checkers = formats
-                .stream()
-                .map(ImageFormatFactory::getFormat)
-                .collect(Collectors.toList());
+            .stream()
+            .map(ImageFormatFactory::getFormat)
+            .collect(Collectors.toList());
 
         this.format = checkers
-                .stream()
-                .filter(checker -> checker.checkSignature(file))
-                .findFirst()
-                .orElse(null);
+            .stream()
+            .filter(checker -> checker.checkSignature(file))
+            .findFirst()
+            .orElse(null);
 
         if (this.format == null) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT);
@@ -114,8 +115,10 @@ public class ImageType extends Type {
             return;
         }
 
-        if(!Unit.isValid(maxFileSize)) {
-            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE_FORMAT);
+        if (!Unit.isValid(maxFileSize)) {
+            throw new TypeValidationException(
+                ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE_FORMAT
+            );
         }
 
         Unit unit = new Unit(maxFileSize);
@@ -147,7 +150,9 @@ public class ImageType extends Type {
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
         String parameterName = provision.get("param_name").asText();
+        @SuppressWarnings("checkstyle:LineLength")
         ImagePersistenceRepository imagePersistenceRepository = AppEngineApplicationContext.getBean(ImagePersistenceRepository.class);
+        @SuppressWarnings("checkstyle:LineLength")
         ImagePersistence persistedProvision = imagePersistenceRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision != null) {
             return;
@@ -164,7 +169,9 @@ public class ImageType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
+        @SuppressWarnings("checkstyle:LineLength")
         ImagePersistenceRepository imagePersistenceRepository = AppEngineApplicationContext.getBean(ImagePersistenceRepository.class);
+        @SuppressWarnings("checkstyle:LineLength")
         ImagePersistence result = imagePersistenceRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result != null) {
             return;
@@ -184,7 +191,9 @@ public class ImageType extends Type {
         byte[] inputFileData = null;
         try {
             inputFileData = provision.get("value").binaryValue();
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         return new FileData(inputFileData, parameterName);
     }
 

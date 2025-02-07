@@ -6,6 +6,9 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.Entity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import be.cytomine.appengine.dto.inputs.task.types.enumeration.EnumerationTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.enumeration.EnumerationValue;
@@ -20,9 +23,6 @@ import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.enumeration.EnumerationPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
-import jakarta.persistence.Entity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
 
 @Entity
 @Data
@@ -40,6 +40,7 @@ public class EnumerationType extends Type {
             case VALUES:
                 this.setValues(parse(value));
                 break;
+            default:
         }
     }
 
@@ -70,10 +71,14 @@ public class EnumerationType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
-        EnumerationPersistenceRepository enumerationPersistenceRepository = AppEngineApplicationContext.getBean(EnumerationPersistenceRepository.class);
+        EnumerationPersistenceRepository repository = AppEngineApplicationContext.getBean(
+            EnumerationPersistenceRepository.class
+        );
         String parameterName = provision.get("param_name").asText();
         String value = provision.get("value").asText();
-        EnumerationPersistence persistedProvision = enumerationPersistenceRepository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
+
+        @SuppressWarnings("checkstyle:LineLength")
+        EnumerationPersistence persistedProvision = repository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new EnumerationPersistence();
             persistedProvision.setValueType(ValueType.ENUMERATION);
@@ -81,17 +86,21 @@ public class EnumerationType extends Type {
             persistedProvision.setParameterName(parameterName);
             persistedProvision.setRunId(runId);
             persistedProvision.setValue(value);
-            enumerationPersistenceRepository.save(persistedProvision);
+            repository.save(persistedProvision);
         } else {
             persistedProvision.setValue(value);
-            enumerationPersistenceRepository.saveAndFlush(persistedProvision);
+            repository.saveAndFlush(persistedProvision);
         }
     }
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        EnumerationPersistenceRepository enumerationPersistenceRepository = AppEngineApplicationContext.getBean(EnumerationPersistenceRepository.class);
-        EnumerationPersistence result = enumerationPersistenceRepository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
+        EnumerationPersistenceRepository repository = AppEngineApplicationContext.getBean(
+            EnumerationPersistenceRepository.class
+        );
+
+        @SuppressWarnings("checkstyle:LineLength")
+        EnumerationPersistence result = repository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result == null) {
             result = new EnumerationPersistence();
             result.setValue(outputValue);
@@ -99,10 +108,10 @@ public class EnumerationType extends Type {
             result.setParameterType(ParameterType.OUTPUT);
             result.setRunId(run.getId());
             result.setParameterName(currentOutput.getName());
-            enumerationPersistenceRepository.save(result);
+            repository.save(result);
         } else {
             result.setValue(outputValue);
-            enumerationPersistenceRepository.saveAndFlush(result);
+            repository.saveAndFlush(result);
         }
     }
 

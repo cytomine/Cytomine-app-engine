@@ -1,23 +1,29 @@
 package be.cytomine.appengine.models.task.integer;
 
+import java.util.UUID;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.dto.inputs.task.types.integer.IntegerTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.integer.IntegerValue;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.TypeValidationException;
 import be.cytomine.appengine.handlers.FileData;
-import be.cytomine.appengine.models.task.*;
+import be.cytomine.appengine.models.task.Output;
+import be.cytomine.appengine.models.task.ParameterType;
+import be.cytomine.appengine.models.task.Run;
+import be.cytomine.appengine.models.task.Type;
+import be.cytomine.appengine.models.task.TypePersistence;
+import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.integer.IntegerPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-
-import java.util.UUID;
 
 @Entity
 @Data
@@ -26,13 +32,15 @@ public class IntegerType extends Type {
 
     @Column(nullable = true)
     private Integer gt;
+
     @Column(nullable = true)
     private Integer lt;
+
     @Column(nullable = true)
     private Integer geq;
+
     @Column(nullable = true)
     private Integer leq;
-
 
     public void setConstraint(IntegerTypeConstraint constraint, Integer value) {
         switch (constraint) {
@@ -48,6 +56,8 @@ public class IntegerType extends Type {
             case LOWER_THAN:
                 this.setLt(value);
                 break;
+            default:
+                break;
         }
     }
 
@@ -58,14 +68,18 @@ public class IntegerType extends Type {
         }
 
         Integer value = (Integer) valueObject;
-        if (this.hasConstraint(IntegerTypeConstraint.GREATER_THAN) && value <= this.getGt())
+        if (this.hasConstraint(IntegerTypeConstraint.GREATER_THAN) && value <= this.getGt()) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_GT_VALIDATION_ERROR);
-        if (this.hasConstraint(IntegerTypeConstraint.GREATER_EQUAL) && value < this.getGeq())
+        }
+        if (this.hasConstraint(IntegerTypeConstraint.GREATER_EQUAL) && value < this.getGeq()) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_GEQ_VALIDATION_ERROR);
-        if (this.hasConstraint(IntegerTypeConstraint.LOWER_THAN) && value >= this.getLt())
+        }
+        if (this.hasConstraint(IntegerTypeConstraint.LOWER_THAN) && value >= this.getLt()) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_LT_VALIDATION_ERROR);
-        if (this.hasConstraint(IntegerTypeConstraint.LOWER_EQUAL) && value > this.getLeq())
+        }
+        if (this.hasConstraint(IntegerTypeConstraint.LOWER_EQUAL) && value > this.getLeq()) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_LEQ_VALIDATION_ERROR);
+        }
     }
 
     public boolean hasConstraint(IntegerTypeConstraint constraint) {
@@ -84,9 +98,12 @@ public class IntegerType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
+        @SuppressWarnings("checkstyle:LineLength")
         IntegerPersistenceRepository integerPersistenceRepository = AppEngineApplicationContext.getBean(IntegerPersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
         int value = provision.get("value").asInt();
+
+        @SuppressWarnings("checkstyle:LineLength")
         IntegerPersistence persistedProvision = integerPersistenceRepository.findIntegerPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new IntegerPersistence();
@@ -105,7 +122,9 @@ public class IntegerType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
+        @SuppressWarnings("checkstyle:LineLength")
         IntegerPersistenceRepository integerPersistenceRepository = AppEngineApplicationContext.getBean(IntegerPersistenceRepository.class);
+        @SuppressWarnings("checkstyle:LineLength")
         IntegerPersistence result = integerPersistenceRepository.findIntegerPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result == null) {
             result = new IntegerPersistence();
@@ -128,7 +147,6 @@ public class IntegerType extends Type {
         byte[] inputFileData = value.getBytes(getStorageCharset(charset));
         return new FileData(inputFileData, parameterName);
     }
-
 
     @Override
     public JsonNode createTypedParameterResponse(JsonNode provision, Run run) {

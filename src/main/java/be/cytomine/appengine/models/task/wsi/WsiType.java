@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Transient;
@@ -66,6 +65,7 @@ public class WsiType extends Type {
             case MAX_HEIGHT:
                 this.setMaxHeight(value.asInt());
                 break;
+            default:
         }
     }
 
@@ -76,15 +76,15 @@ public class WsiType extends Type {
         }
 
         List<FileFormat> checkers = formats
-                .stream()
-                .map(WsiFormatFactory::getFormat)
-                .collect(Collectors.toList());
+            .stream()
+            .map(WsiFormatFactory::getFormat)
+            .collect(Collectors.toList());
 
         this.format = checkers
-                .stream()
-                .filter(checker -> checker.checkSignature(file))
-                .findFirst()
-                .orElse(null);
+            .stream()
+            .filter(checker -> checker.checkSignature(file))
+            .findFirst()
+            .orElse(null);
 
         if (this.format == null) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT);
@@ -116,7 +116,9 @@ public class WsiType extends Type {
         }
 
         if (!Unit.isValid(maxFileSize)) {
-            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE_FORMAT);
+            throw new TypeValidationException(
+                ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE_FORMAT
+            );
         }
 
         Unit unit = new Unit(maxFileSize);
@@ -143,7 +145,9 @@ public class WsiType extends Type {
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
         String parameterName = provision.get("param_name").asText();
+        @SuppressWarnings("checkstyle:LineLength")
         WsiPersistenceRepository wsiPersistenceRepository = AppEngineApplicationContext.getBean(WsiPersistenceRepository.class);
+        @SuppressWarnings("checkstyle:LineLength")
         WsiPersistence persistedProvision = wsiPersistenceRepository.findWsiPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision != null) {
             return;
@@ -160,7 +164,9 @@ public class WsiType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
+        @SuppressWarnings("checkstyle:LineLength")
         WsiPersistenceRepository wsiPersistenceRepository = AppEngineApplicationContext.getBean(WsiPersistenceRepository.class);
+        @SuppressWarnings("checkstyle:LineLength")
         WsiPersistence result = wsiPersistenceRepository.findWsiPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result != null) {
             return;
@@ -182,7 +188,9 @@ public class WsiType extends Type {
 
         try {
             inputFileData = provision.get("value").binaryValue();
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
         return new FileData(inputFileData, parameterName);
     }

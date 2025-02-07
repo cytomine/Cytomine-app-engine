@@ -1,8 +1,19 @@
 package be.cytomine.appengine.models.task.geometry;
 
+import java.util.Arrays;
+import java.util.List;
+import java.util.UUID;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.Entity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
+import org.locationtech.jts.geom.Geometry;
+import org.locationtech.jts.io.geojson.GeoJsonReader;
 
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.dto.inputs.task.types.geometry.GeometryValue;
@@ -18,17 +29,6 @@ import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.geometry.GeometryPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
-import jakarta.persistence.Entity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import java.util.Arrays;
-import java.util.List;
-import java.util.UUID;
-
-import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
-import org.locationtech.jts.geom.Geometry;
-import org.locationtech.jts.io.geojson.GeoJsonReader;
 
 @Entity
 @Data
@@ -49,7 +49,7 @@ public class GeometryType extends Type {
      *
      * @param input The string representation of the geometry
      * @return The geometry
-     * @throws ParseException
+     * @throws ParseException if there is an error while parsing the geometry
      */
     public static Geometry parseGeometry(String input) throws ParseException {
         try {
@@ -62,7 +62,7 @@ public class GeometryType extends Type {
             geometry.setUserData(json.get("properties"));
 
             return geometry;
-        } catch(Exception e) {
+        } catch (Exception e) {
             throw new ParseException("Error while parsing geometry: " + e.getMessage());
         }
     }
@@ -77,7 +77,9 @@ public class GeometryType extends Type {
         try {
             geometry = parseGeometry((String) valueObject);
         } catch (ParseException e) {
-            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_GEOJSON_PROCESSING_ERROR);
+            throw new TypeValidationException(
+                ErrorCode.INTERNAL_PARAMETER_GEOJSON_PROCESSING_ERROR
+            );
         }
 
         if (!geometry.isValid()) {
@@ -85,7 +87,9 @@ public class GeometryType extends Type {
         }
 
         if (!SUPPORTED_TYPES.contains(geometry.getGeometryType())) {
-            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_UNSUPPORTED_GEOMETRY_TYPE);
+            throw new TypeValidationException(
+                ErrorCode.INTERNAL_PARAMETER_UNSUPPORTED_GEOMETRY_TYPE
+            );
         }
 
         // Validation for Circle and Rectangle
@@ -100,7 +104,9 @@ public class GeometryType extends Type {
 
         String subType = (String) properties.get("subType");
         if (!subType.equals("Circle") && !subType.equals("Rectangle")) {
-            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_UNSUPPORTED_GEOMETRY_SUBTYPE);
+            throw new TypeValidationException(
+                ErrorCode.INTERNAL_PARAMETER_UNSUPPORTED_GEOMETRY_SUBTYPE
+            );
         }
 
         if (subType.equals("Circle") && !properties.containsKey("radius")) {
@@ -110,10 +116,12 @@ public class GeometryType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
+        @SuppressWarnings("checkstyle:LineLength")
         GeometryPersistenceRepository geometryPersistenceRepository = AppEngineApplicationContext.getBean(GeometryPersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
         String value = provision.get("value").asText();
 
+        @SuppressWarnings("checkstyle:LineLength")
         GeometryPersistence persistedProvision = geometryPersistenceRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new GeometryPersistence();
@@ -132,7 +140,10 @@ public class GeometryType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
+        @SuppressWarnings("checkstyle:LineLength")
         GeometryPersistenceRepository geometryPersistenceRepository = AppEngineApplicationContext.getBean(GeometryPersistenceRepository.class);
+
+        @SuppressWarnings("checkstyle:LineLength")
         GeometryPersistence result = geometryPersistenceRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result == null) {
             result = new GeometryPersistence();
@@ -169,7 +180,11 @@ public class GeometryType extends Type {
     }
 
     @Override
-    public TaskRunParameterValue buildTaskRunParameterValue(String trimmedOutput, UUID id, String outputName) {
+    public TaskRunParameterValue buildTaskRunParameterValue(
+        String trimmedOutput,
+        UUID id,
+        String outputName
+    ) {
         GeometryValue geometryValue = new GeometryValue();
         geometryValue.setParameterName(outputName);
         geometryValue.setTaskRunId(id);

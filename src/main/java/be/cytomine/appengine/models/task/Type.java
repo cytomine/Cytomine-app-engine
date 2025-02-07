@@ -1,23 +1,29 @@
 package be.cytomine.appengine.models.task;
 
-import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
-import be.cytomine.appengine.exceptions.TypeValidationException;
-import be.cytomine.appengine.handlers.FileData;
-import be.cytomine.appengine.models.BaseEntity;
-
-import com.fasterxml.jackson.core.type.TypeReference;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-
-import jakarta.persistence.*;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import jakarta.persistence.Column;
+import jakarta.persistence.ElementCollection;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.Id;
+import jakarta.persistence.Inheritance;
+import jakarta.persistence.InheritanceType;
+import jakarta.persistence.Table;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
+import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
+import be.cytomine.appengine.exceptions.TypeValidationException;
+import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.models.BaseEntity;
 
 @Entity
 @Table(name = "type")
@@ -29,10 +35,12 @@ public class Type extends BaseEntity {
     @Column(name = "identifier", updatable = false, nullable = false)
     @GeneratedValue(generator = "UUID")
     private UUID identifier;
+
     private String id;  // as found in the descriptor
 
+    // used to track which constraints are defined for this type object
     @ElementCollection
-    private List<String> constraints; // used to track which constraints are defined for this type object
+    private List<String> constraints;
 
     /**
      * Parse a string representation of a list of string to a list of strings
@@ -51,11 +59,11 @@ public class Type extends BaseEntity {
 
     public void validate(Object value) throws TypeValidationException {}
 
-    public void persistProvision(JsonNode provision , UUID runId){};
+    public void persistProvision(JsonNode provision, UUID runId) {}
 
-    public void persistResult(Run runOptional, Output currentOutput, String outputValue){};
+    public void persistResult(Run runOptional, Output currentOutput, String outputValue) {}
 
-    public FileData mapToStorageFileData(JsonNode provision , String charset) {
+    public FileData mapToStorageFileData(JsonNode provision, String charset) {
         return null;
     }
 
@@ -74,7 +82,15 @@ public class Type extends BaseEntity {
         return null;
     }
 
-    public TaskRunParameterValue buildTaskRunParameterValue(String trimmedOutput, UUID id, String outputName) {return null;}
+    public TaskRunParameterValue buildTaskRunParameterValue(
+        String trimmedOutput,
+        UUID id,
+        String outputName
+    ) {
+        return null;
+    }
 
-    public TaskRunParameterValue buildTaskRunParameterValue(TypePersistence typePersistence) {return null;}
+    public TaskRunParameterValue buildTaskRunParameterValue(TypePersistence typePersistence) {
+        return null;
+    }
 }

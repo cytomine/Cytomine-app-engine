@@ -1,5 +1,15 @@
 package be.cytomine.appengine.models.task.number;
 
+import java.util.UUID;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.dto.inputs.task.types.number.NumberTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.number.NumberValue;
@@ -14,16 +24,6 @@ import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.number.NumberPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-import java.util.UUID;
 
 @Data
 @Entity
@@ -32,14 +32,18 @@ public class NumberType extends Type {
 
     @Column(nullable = true)
     private Double gt;
+
     @Column(nullable = true)
     private Double geq;
+
     @Column(nullable = true)
     private Double lt;
+
     @Column(nullable = true)
     private Double leq;
 
     private boolean infinityAllowed = false;
+
     private boolean nanAllowed = false;
 
     public void setConstraint(NumberTypeConstraint constraint, String value) {
@@ -62,6 +66,7 @@ public class NumberType extends Type {
             case NAN_ALLOWED:
                 this.setNanAllowed(Boolean.parseBoolean(value));
                 break;
+            default:
         }
     }
 
@@ -102,9 +107,12 @@ public class NumberType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
+        @SuppressWarnings("checkstyle:LineLength")
         NumberPersistenceRepository numberPersistenceRepository = AppEngineApplicationContext.getBean(NumberPersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
         double value = provision.get("value").asDouble();
+
+        @SuppressWarnings("checkstyle:LineLength")
         NumberPersistence persistedProvision = numberPersistenceRepository.findNumberPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new NumberPersistence();
@@ -122,7 +130,9 @@ public class NumberType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
+        @SuppressWarnings("checkstyle:LineLength")
         NumberPersistenceRepository numberPersistenceRepository = AppEngineApplicationContext.getBean(NumberPersistenceRepository.class);
+        @SuppressWarnings("checkstyle:LineLength")
         NumberPersistence result = numberPersistenceRepository.findNumberPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         double value = Double.parseDouble(outputValue);
         if (result == null) {
@@ -160,7 +170,11 @@ public class NumberType extends Type {
     }
 
     @Override
-    public TaskRunParameterValue buildTaskRunParameterValue(String trimmedOutput, UUID id, String outputName) {
+    public TaskRunParameterValue buildTaskRunParameterValue(
+        String trimmedOutput,
+        UUID id,
+        String outputName
+    ) {
         NumberValue value = new NumberValue();
         value.setParameterName(outputName);
         value.setTaskRunId(id);

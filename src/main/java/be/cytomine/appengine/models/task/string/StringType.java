@@ -1,5 +1,15 @@
 package be.cytomine.appengine.models.task.string;
 
+import java.util.UUID;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.dto.inputs.task.types.string.StringTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.string.StringValue;
@@ -14,16 +24,6 @@ import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.string.StringPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-import java.util.UUID;
 
 @Data
 @Entity
@@ -43,6 +43,7 @@ public class StringType extends Type {
             case MAX_LENGTH:
                 this.setMaxLength(value);
                 break;
+            default:
         }
     }
 
@@ -62,20 +63,28 @@ public class StringType extends Type {
 
         String value = (String) valueObject;
 
-        if (this.hasConstraint(StringTypeConstraint.MIN_LENGTH) && value.length() < this.getMinLength()) {
+        if (
+            this.hasConstraint(StringTypeConstraint.MIN_LENGTH)
+            && value.length() < this.getMinLength()
+        ) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_GT_VALIDATION_ERROR);
         }
 
-        if (this.hasConstraint(StringTypeConstraint.MAX_LENGTH) && value.length() > this.getMaxLength()) {
+        if (
+            this.hasConstraint(StringTypeConstraint.MAX_LENGTH)
+            && value.length() > this.getMaxLength()
+        ) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_GEQ_VALIDATION_ERROR);
         }
     }
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
+        @SuppressWarnings("checkstyle:LineLength")
         StringPersistenceRepository stringPersistenceRepository = AppEngineApplicationContext.getBean(StringPersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
         String value = provision.get("value").asText();
+        @SuppressWarnings("checkstyle:LineLength")
         StringPersistence persistedProvision = stringPersistenceRepository.findStringPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new StringPersistence();
@@ -93,7 +102,9 @@ public class StringType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
+        @SuppressWarnings("checkstyle:LineLength")
         StringPersistenceRepository stringPersistenceRepository = AppEngineApplicationContext.getBean(StringPersistenceRepository.class);
+        @SuppressWarnings("checkstyle:LineLength")
         StringPersistence result = stringPersistenceRepository.findStringPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result == null) {
             result = new StringPersistence();
@@ -130,7 +141,11 @@ public class StringType extends Type {
     }
 
     @Override
-    public TaskRunParameterValue buildTaskRunParameterValue(String trimmedOutput, UUID id, String outputName) {
+    public TaskRunParameterValue buildTaskRunParameterValue(
+        String trimmedOutput,
+        UUID id,
+        String outputName
+    ) {
         StringValue value = new StringValue();
         value.setParameterName(outputName);
         value.setTaskRunId(id);

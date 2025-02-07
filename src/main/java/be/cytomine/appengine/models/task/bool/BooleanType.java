@@ -1,8 +1,13 @@
 package be.cytomine.appengine.models.task.bool;
 
+import java.util.UUID;
+
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.Entity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.dto.inputs.task.types.bool.BooleanValue;
@@ -17,10 +22,6 @@ import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.bool.BooleanPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
-import jakarta.persistence.Entity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import java.util.UUID;
 
 @Data
 @Entity
@@ -40,11 +41,14 @@ public class BooleanType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
-        BooleanPersistenceRepository booleanPersistenceRepository = AppEngineApplicationContext.getBean(BooleanPersistenceRepository.class);
+        BooleanPersistenceRepository repository = AppEngineApplicationContext.getBean(
+            BooleanPersistenceRepository.class
+        );
         String parameterName = provision.get("param_name").asText();
         boolean value = provision.get("value").asBoolean();
 
-        BooleanPersistence persistedProvision = booleanPersistenceRepository.findBooleanPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
+        @SuppressWarnings("checkstyle:LineLength")
+        BooleanPersistence persistedProvision = repository.findBooleanPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new BooleanPersistence();
             persistedProvision.setValueType(ValueType.BOOLEAN);
@@ -52,17 +56,20 @@ public class BooleanType extends Type {
             persistedProvision.setParameterName(parameterName);
             persistedProvision.setRunId(runId);
             persistedProvision.setValue(value);
-            booleanPersistenceRepository.save(persistedProvision);
+            repository.save(persistedProvision);
         } else {
             persistedProvision.setValue(value);
-            booleanPersistenceRepository.saveAndFlush(persistedProvision);
+            repository.saveAndFlush(persistedProvision);
         }
     }
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        BooleanPersistenceRepository booleanPersistenceRepository = AppEngineApplicationContext.getBean(BooleanPersistenceRepository.class);
-        BooleanPersistence result = booleanPersistenceRepository.findBooleanPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
+        BooleanPersistenceRepository repository = AppEngineApplicationContext.getBean(
+            BooleanPersistenceRepository.class
+        );
+        @SuppressWarnings("checkstyle:LineLength")
+        BooleanPersistence result = repository.findBooleanPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result == null) {
             result = new BooleanPersistence();
             result.setValue(Boolean.parseBoolean(outputValue));
@@ -70,10 +77,10 @@ public class BooleanType extends Type {
             result.setParameterType(ParameterType.OUTPUT);
             result.setRunId(run.getId());
             result.setParameterName(currentOutput.getName());
-            booleanPersistenceRepository.save(result);
+            repository.save(result);
         } else {
             result.setValue(Boolean.parseBoolean(outputValue));
-            booleanPersistenceRepository.saveAndFlush(result);
+            repository.saveAndFlush(result);
         }
     }
 
@@ -98,7 +105,11 @@ public class BooleanType extends Type {
     }
 
     @Override
-    public TaskRunParameterValue buildTaskRunParameterValue(String trimmedOutput, UUID id, String outputName) {
+    public TaskRunParameterValue buildTaskRunParameterValue(
+        String trimmedOutput,
+        UUID id,
+        String outputName
+    ) {
         BooleanValue booleanValue = new BooleanValue();
         booleanValue.setParameterName(outputName);
         booleanValue.setTaskRunId(id);
