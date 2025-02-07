@@ -8,5 +8,5 @@ import lombok.EqualsAndHashCode;
 @Data
 @AllArgsConstructor
 public class ParameterError extends BaseErrorDetails {
-    private String param_name;
+    private String parameterName;
 }

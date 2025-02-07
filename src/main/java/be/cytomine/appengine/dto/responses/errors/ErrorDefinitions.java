@@ -1,13 +1,11 @@
 package be.cytomine.appengine.dto.responses.errors;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
 import java.util.HashMap;
 
+import be.cytomine.appengine.exceptions.UndefinedCodeException;
+
 public class ErrorDefinitions {
-    static final private HashMap<ErrorCode, MessageCode> codes;
+    private static final HashMap<ErrorCode, MessageCode> codes;
 
     static {
         codes = new HashMap<>();
@@ -66,13 +64,4 @@ public class ErrorDefinitions {
         }
         return codes.get(code);
     }
-
 }
-
-@EqualsAndHashCode(callSuper = true)
-@Data
-@AllArgsConstructor
-class UndefinedCodeException extends RuntimeException {
-    private ErrorCode code;
-}
-
