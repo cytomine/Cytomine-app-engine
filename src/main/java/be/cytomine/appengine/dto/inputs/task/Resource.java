@@ -3,6 +3,7 @@ package be.cytomine.appengine.dto.inputs.task;
 import java.util.Date;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 
@@ -17,9 +18,12 @@ public class Resource {
 
     private TaskRunState state;
 
+    @JsonProperty("created_at")
     private Date createdAt;
 
+    @JsonProperty("updated_at")
     private Date updatedAt;
 
+    @JsonProperty("last_state_transition_at")
     private Date lastStateTransitionAt;
 }
