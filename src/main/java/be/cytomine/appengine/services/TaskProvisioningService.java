@@ -570,7 +570,7 @@ public class TaskProvisioningService {
         action.setStatus("success");
 
         TaskDescription description = makeTaskDescription(run.getTask());
-        Resource resource = new Resource(description, run.getId(), state, new Date(), new Date(), new Date());
+        Resource resource = new Resource(run.getId(), description, state, new Date(), new Date(), new Date());
         action.setResource(resource);
 
         return action;
@@ -632,6 +632,6 @@ public class TaskProvisioningService {
         Run run = getRunIfValid(runId);
         TaskDescription description = makeTaskDescription(run.getTask());
         logger.info("Retrieving Run : retrieved");
-        return new TaskRunResponse(description, UUID.fromString(runId), run.getState(), run.getCreated_at(), run.getUpdated_at(), run.getLast_state_transition_at());
+        return new TaskRunResponse(UUID.fromString(runId), description, run.getState(), run.getCreated_at(), run.getUpdated_at(), run.getLast_state_transition_at());
     }
 }

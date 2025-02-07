@@ -375,7 +375,7 @@ public class TaskService {
         createRunStorages(taskRunID);
         // build response dto
         logger.info("tasks/{id}/runs : run created...");
-        return new TaskRun(makeTaskDescription(task), taskRunID, TaskRunState.CREATED);
+        return new TaskRun(taskRunID, makeTaskDescription(task), TaskRunState.CREATED);
     }
 
     @Transactional
@@ -399,7 +399,7 @@ public class TaskService {
         createRunStorages(taskRunID);
         // build response dto
         logger.info("tasks/{id}/runs : run created...");
-        return new TaskRun(makeTaskDescription(task.get()), taskRunID, TaskRunState.CREATED);
+        return new TaskRun(taskRunID, makeTaskDescription(task.get()), TaskRunState.CREATED);
     }
 
     private void createRunStorages(UUID taskRunID) throws RunTaskServiceException {

@@ -9,11 +9,11 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class TaskIdentifiers {
 
+    private final UUID localTaskIdentifier;
+
     private final String storageIdentifier;
 
     private final String imageRegistryCompliantName;
-
-    private final UUID localTaskIdentifier;
 
     @Override
     public String toString() {

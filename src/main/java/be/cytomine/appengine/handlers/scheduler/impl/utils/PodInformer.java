@@ -10,7 +10,6 @@ import io.fabric8.kubernetes.api.model.Pod;
 import io.fabric8.kubernetes.client.informers.ResourceEventHandler;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.stereotype.Component;
 
 import be.cytomine.appengine.models.task.Run;
@@ -22,15 +21,20 @@ import be.cytomine.appengine.states.TaskRunState;
 @Component
 public class PodInformer implements ResourceEventHandler<Pod> {
 
-    private static final Map<String, TaskRunState> STATUS = new HashMap<String, TaskRunState>() {{
-        put("Pending", TaskRunState.PENDING);
-        put("Running", TaskRunState.RUNNING);
-        put("Succeeded", TaskRunState.RUNNING);
-        put("Failed", TaskRunState.FAILED);
-        put("Unknown", TaskRunState.FAILED);
-    }};
+    private static final Map<String, TaskRunState> STATUS = new HashMap<String, TaskRunState>() {
+        {
+            put("Pending", TaskRunState.PENDING);
+            put("Running", TaskRunState.RUNNING);
+            put("Succeeded", TaskRunState.RUNNING);
+            put("Failed", TaskRunState.FAILED);
+            put("Unknown", TaskRunState.FAILED);
+        }
+    };
 
-    private static final Set<TaskRunState> FINAL_STATES = Set.of(TaskRunState.FAILED, TaskRunState.FINISHED);
+    private static final Set<TaskRunState> FINAL_STATES = Set.of(
+        TaskRunState.FAILED,
+        TaskRunState.FINISHED
+    );
 
     private final RunRepository runRepository;
 

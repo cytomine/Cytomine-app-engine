@@ -1,30 +1,32 @@
 package be.cytomine.appengine.handlers.registry.impl;
 
-import be.cytomine.appengine.dto.handlers.registry.DockerImage;
-import be.cytomine.appengine.exceptions.RegistryException;
-import be.cytomine.appengine.handlers.RegistryHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import com.cytomine.registry.client.RegistryClient;
 
+import com.cytomine.registry.client.RegistryClient;
+import lombok.extern.slf4j.Slf4j;
+
+import be.cytomine.appengine.dto.handlers.registry.DockerImage;
+import be.cytomine.appengine.exceptions.RegistryException;
+import be.cytomine.appengine.handlers.RegistryHandler;
+
+@Slf4j
 public class DockerRegistryHandler implements RegistryHandler {
 
-    private String password;
-    private String user;
-    private boolean authenticated;
-    private String port;
-    private String host;
-    private String scheme;
-    Logger logger = LoggerFactory.getLogger(DockerRegistryHandler.class);
-
-    public DockerRegistryHandler(String registryHost, String registryPort, String registryScheme, boolean authenticated, String registryUsername, String registryPassword) throws IOException {
+    public DockerRegistryHandler(
+        String registryHost,
+        String registryPort,
+        String registryScheme,
+        boolean authenticated,
+        String registryUsername,
+        String registryPassword
+    ) throws IOException {
         RegistryClient.config(registryScheme, registryHost, registryPort);
-        if (authenticated)
+        if (authenticated) {
             RegistryClient.authenticate(registryUsername, registryPassword);
-        logger.info("Image Registry Handler : Docker Registry initialized");
+        }
+        log.info("Image Registry Handler : Docker Registry initialized");
     }
 
     @Override
@@ -35,7 +37,7 @@ public class DockerRegistryHandler implements RegistryHandler {
 
     @Override
     public void pushImage(DockerImage image) throws RegistryException {
-        logger.info("Image Registry Handler : pushing image...");
+        log.info("Image Registry Handler : pushing image...");
         byte[] imageTarData = image.getDockerImageData();
         InputStream imageTarDataInputStream = new ByteArrayInputStream(imageTarData);
         String imageNameWithRegistry = image.getImageName();
@@ -43,11 +45,10 @@ public class DockerRegistryHandler implements RegistryHandler {
             RegistryClient.push(imageTarDataInputStream, imageNameWithRegistry);
         } catch (IOException e) {
             e.printStackTrace();
-            throw new RegistryException("Docker Registry Handler : failed to push image to registry");
+            throw new RegistryException(
+                "Docker Registry Handler: failed to push image to registry"
+            );
         }
-        logger.info("Image Registry Handler : image pushed");
-
+        log.info("Image Registry Handler : image pushed");
     }
-
-
 }

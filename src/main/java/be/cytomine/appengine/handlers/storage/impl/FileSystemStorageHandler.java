@@ -1,17 +1,18 @@
 package be.cytomine.appengine.handlers.storage.impl;
 
-import be.cytomine.appengine.dto.handlers.filestorage.Storage;
-import be.cytomine.appengine.exceptions.FileStorageException;
-import be.cytomine.appengine.handlers.FileData;
-import be.cytomine.appengine.handlers.FileStorageHandler;
-import org.springframework.beans.factory.annotation.Value;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Comparator;
+
+import org.springframework.beans.factory.annotation.Value;
+
+import be.cytomine.appengine.dto.handlers.filestorage.Storage;
+import be.cytomine.appengine.exceptions.FileStorageException;
+import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.FileStorageHandler;
 
 public class FileSystemStorageHandler implements FileStorageHandler {
 
