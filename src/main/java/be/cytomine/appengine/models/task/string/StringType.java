@@ -25,6 +25,7 @@ import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.string.StringPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 
+@SuppressWarnings("checkstyle:LineLength")
 @Data
 @Entity
 @EqualsAndHashCode(callSuper = true)
@@ -80,11 +81,9 @@ public class StringType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
-        @SuppressWarnings("checkstyle:LineLength")
         StringPersistenceRepository stringPersistenceRepository = AppEngineApplicationContext.getBean(StringPersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
         String value = provision.get("value").asText();
-        @SuppressWarnings("checkstyle:LineLength")
         StringPersistence persistedProvision = stringPersistenceRepository.findStringPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new StringPersistence();
@@ -102,9 +101,7 @@ public class StringType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        @SuppressWarnings("checkstyle:LineLength")
         StringPersistenceRepository stringPersistenceRepository = AppEngineApplicationContext.getBean(StringPersistenceRepository.class);
-        @SuppressWarnings("checkstyle:LineLength")
         StringPersistence result = stringPersistenceRepository.findStringPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result == null) {
             result = new StringPersistence();

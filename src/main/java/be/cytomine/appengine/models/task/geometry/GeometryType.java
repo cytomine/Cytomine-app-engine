@@ -30,8 +30,9 @@ import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.geometry.GeometryPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 
-@Entity
+@SuppressWarnings("checkstyle:LineLength")
 @Data
+@Entity
 @EqualsAndHashCode(callSuper = true)
 public class GeometryType extends Type {
 
@@ -116,12 +117,9 @@ public class GeometryType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
-        @SuppressWarnings("checkstyle:LineLength")
         GeometryPersistenceRepository geometryPersistenceRepository = AppEngineApplicationContext.getBean(GeometryPersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
         String value = provision.get("value").asText();
-
-        @SuppressWarnings("checkstyle:LineLength")
         GeometryPersistence persistedProvision = geometryPersistenceRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new GeometryPersistence();
@@ -140,10 +138,7 @@ public class GeometryType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        @SuppressWarnings("checkstyle:LineLength")
         GeometryPersistenceRepository geometryPersistenceRepository = AppEngineApplicationContext.getBean(GeometryPersistenceRepository.class);
-
-        @SuppressWarnings("checkstyle:LineLength")
         GeometryPersistence result = geometryPersistenceRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result == null) {
             result = new GeometryPersistence();

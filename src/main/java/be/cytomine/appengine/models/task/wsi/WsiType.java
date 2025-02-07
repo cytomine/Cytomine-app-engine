@@ -31,8 +31,9 @@ import be.cytomine.appengine.repositories.wsi.WsiPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import be.cytomine.appengine.utils.units.Unit;
 
-@Entity
+@SuppressWarnings("checkstyle:LineLength")
 @Data
+@Entity
 @EqualsAndHashCode(callSuper = true)
 public class WsiType extends Type {
 
@@ -145,9 +146,7 @@ public class WsiType extends Type {
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
         String parameterName = provision.get("param_name").asText();
-        @SuppressWarnings("checkstyle:LineLength")
         WsiPersistenceRepository wsiPersistenceRepository = AppEngineApplicationContext.getBean(WsiPersistenceRepository.class);
-        @SuppressWarnings("checkstyle:LineLength")
         WsiPersistence persistedProvision = wsiPersistenceRepository.findWsiPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision != null) {
             return;
@@ -164,9 +163,7 @@ public class WsiType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        @SuppressWarnings("checkstyle:LineLength")
         WsiPersistenceRepository wsiPersistenceRepository = AppEngineApplicationContext.getBean(WsiPersistenceRepository.class);
-        @SuppressWarnings("checkstyle:LineLength")
         WsiPersistence result = wsiPersistenceRepository.findWsiPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result != null) {
             return;

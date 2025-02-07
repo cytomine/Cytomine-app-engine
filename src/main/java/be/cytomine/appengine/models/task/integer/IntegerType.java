@@ -25,8 +25,9 @@ import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.integer.IntegerPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 
-@Entity
+@SuppressWarnings("checkstyle:LineLength")
 @Data
+@Entity
 @EqualsAndHashCode(callSuper = true)
 public class IntegerType extends Type {
 
@@ -98,12 +99,9 @@ public class IntegerType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
-        @SuppressWarnings("checkstyle:LineLength")
         IntegerPersistenceRepository integerPersistenceRepository = AppEngineApplicationContext.getBean(IntegerPersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
         int value = provision.get("value").asInt();
-
-        @SuppressWarnings("checkstyle:LineLength")
         IntegerPersistence persistedProvision = integerPersistenceRepository.findIntegerPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new IntegerPersistence();
@@ -122,9 +120,7 @@ public class IntegerType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        @SuppressWarnings("checkstyle:LineLength")
         IntegerPersistenceRepository integerPersistenceRepository = AppEngineApplicationContext.getBean(IntegerPersistenceRepository.class);
-        @SuppressWarnings("checkstyle:LineLength")
         IntegerPersistence result = integerPersistenceRepository.findIntegerPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result == null) {
             result = new IntegerPersistence();

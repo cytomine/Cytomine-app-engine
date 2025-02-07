@@ -24,8 +24,9 @@ import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.enumeration.EnumerationPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 
-@Entity
+@SuppressWarnings("checkstyle:LineLength")
 @Data
+@Entity
 @EqualsAndHashCode(callSuper = true)
 public class EnumerationType extends Type {
 
@@ -71,13 +72,9 @@ public class EnumerationType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
-        EnumerationPersistenceRepository repository = AppEngineApplicationContext.getBean(
-            EnumerationPersistenceRepository.class
-        );
+        EnumerationPersistenceRepository repository = AppEngineApplicationContext.getBean(EnumerationPersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
         String value = provision.get("value").asText();
-
-        @SuppressWarnings("checkstyle:LineLength")
         EnumerationPersistence persistedProvision = repository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new EnumerationPersistence();
@@ -95,11 +92,7 @@ public class EnumerationType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        EnumerationPersistenceRepository repository = AppEngineApplicationContext.getBean(
-            EnumerationPersistenceRepository.class
-        );
-
-        @SuppressWarnings("checkstyle:LineLength")
+        EnumerationPersistenceRepository repository = AppEngineApplicationContext.getBean(EnumerationPersistenceRepository.class);
         EnumerationPersistence result = repository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result == null) {
             result = new EnumerationPersistence();

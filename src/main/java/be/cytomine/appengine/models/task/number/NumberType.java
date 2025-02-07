@@ -25,6 +25,7 @@ import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.number.NumberPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 
+@SuppressWarnings("checkstyle:LineLength")
 @Data
 @Entity
 @EqualsAndHashCode(callSuper = true)
@@ -107,12 +108,9 @@ public class NumberType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
-        @SuppressWarnings("checkstyle:LineLength")
         NumberPersistenceRepository numberPersistenceRepository = AppEngineApplicationContext.getBean(NumberPersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
         double value = provision.get("value").asDouble();
-
-        @SuppressWarnings("checkstyle:LineLength")
         NumberPersistence persistedProvision = numberPersistenceRepository.findNumberPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new NumberPersistence();
@@ -130,9 +128,7 @@ public class NumberType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        @SuppressWarnings("checkstyle:LineLength")
         NumberPersistenceRepository numberPersistenceRepository = AppEngineApplicationContext.getBean(NumberPersistenceRepository.class);
-        @SuppressWarnings("checkstyle:LineLength")
         NumberPersistence result = numberPersistenceRepository.findNumberPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         double value = Double.parseDouble(outputValue);
         if (result == null) {

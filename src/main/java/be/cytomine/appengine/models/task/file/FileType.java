@@ -26,8 +26,9 @@ import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.file.FilePersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 
-@Entity
+@SuppressWarnings("checkstyle:LineLength")
 @Data
+@Entity
 @EqualsAndHashCode(callSuper = true)
 public class FileType extends Type {
 
@@ -59,11 +60,7 @@ public class FileType extends Type {
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
         String parameterName = provision.get("param_name").asText();
-        FilePersistenceRepository filePersistenceRepository = AppEngineApplicationContext.getBean(
-            FilePersistenceRepository.class
-        );
-
-        @SuppressWarnings("checkstyle:LineLength")
+        FilePersistenceRepository filePersistenceRepository = AppEngineApplicationContext.getBean(FilePersistenceRepository.class);
         FilePersistence persistedProvision = filePersistenceRepository.findFilePersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision != null) {
             return;
@@ -80,11 +77,7 @@ public class FileType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        FilePersistenceRepository filePersistenceRepository = AppEngineApplicationContext.getBean(
-            FilePersistenceRepository.class
-        );
-
-        @SuppressWarnings("checkstyle:LineLength")
+        FilePersistenceRepository filePersistenceRepository = AppEngineApplicationContext.getBean(FilePersistenceRepository.class);
         FilePersistence result = filePersistenceRepository.findFilePersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result != null) {
             return;

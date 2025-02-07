@@ -31,8 +31,9 @@ import be.cytomine.appengine.repositories.image.ImagePersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import be.cytomine.appengine.utils.units.Unit;
 
-@Entity
+@SuppressWarnings("checkstyle:LineLength")
 @Data
+@Entity
 @EqualsAndHashCode(callSuper = true)
 public class ImageType extends Type {
 
@@ -150,9 +151,7 @@ public class ImageType extends Type {
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
         String parameterName = provision.get("param_name").asText();
-        @SuppressWarnings("checkstyle:LineLength")
         ImagePersistenceRepository imagePersistenceRepository = AppEngineApplicationContext.getBean(ImagePersistenceRepository.class);
-        @SuppressWarnings("checkstyle:LineLength")
         ImagePersistence persistedProvision = imagePersistenceRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision != null) {
             return;
@@ -169,9 +168,7 @@ public class ImageType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        @SuppressWarnings("checkstyle:LineLength")
         ImagePersistenceRepository imagePersistenceRepository = AppEngineApplicationContext.getBean(ImagePersistenceRepository.class);
-        @SuppressWarnings("checkstyle:LineLength")
         ImagePersistence result = imagePersistenceRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result != null) {
             return;

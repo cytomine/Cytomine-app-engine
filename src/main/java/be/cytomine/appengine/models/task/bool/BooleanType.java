@@ -23,6 +23,7 @@ import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.bool.BooleanPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 
+@SuppressWarnings("checkstyle:LineLength")
 @Data
 @Entity
 @EqualsAndHashCode(callSuper = true)
@@ -41,13 +42,9 @@ public class BooleanType extends Type {
 
     @Override
     public void persistProvision(JsonNode provision, UUID runId) {
-        BooleanPersistenceRepository repository = AppEngineApplicationContext.getBean(
-            BooleanPersistenceRepository.class
-        );
+        BooleanPersistenceRepository repository = AppEngineApplicationContext.getBean(BooleanPersistenceRepository.class);
         String parameterName = provision.get("param_name").asText();
         boolean value = provision.get("value").asBoolean();
-
-        @SuppressWarnings("checkstyle:LineLength")
         BooleanPersistence persistedProvision = repository.findBooleanPersistenceByParameterNameAndRunIdAndParameterType(parameterName, runId, ParameterType.INPUT);
         if (persistedProvision == null) {
             persistedProvision = new BooleanPersistence();
@@ -65,10 +62,7 @@ public class BooleanType extends Type {
 
     @Override
     public void persistResult(Run run, Output currentOutput, String outputValue) {
-        BooleanPersistenceRepository repository = AppEngineApplicationContext.getBean(
-            BooleanPersistenceRepository.class
-        );
-        @SuppressWarnings("checkstyle:LineLength")
+        BooleanPersistenceRepository repository = AppEngineApplicationContext.getBean(BooleanPersistenceRepository.class);
         BooleanPersistence result = repository.findBooleanPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result == null) {
             result = new BooleanPersistence();
