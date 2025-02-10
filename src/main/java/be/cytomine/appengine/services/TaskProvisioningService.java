@@ -411,19 +411,19 @@ public class TaskProvisioningService {
                     currentOutput = null;
                 }
 
-                if (!remainingOutputs.isEmpty()) {
-                    AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_MISSING_OUTPUTS);
-                    logger.info("Posting Outputs Archive : output invalid (missing outputs)");
+                // there's a file that do not match any output parameter
+                if (currentOutput == null) {
+                    AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_UNKNOWN_OUTPUT);
+                    logger.info("Posting Outputs Archive : output invalid (unknown output)");
                     run.setState(TaskRunState.FAILED);
                     runRepository.saveAndFlush(run);
                     logger.info("Posting Outputs Archive : updated Run state to FAILED");
                     throw new ProvisioningException(error);
                 }
 
-                // there's a file that do not match any output parameter
-                if (currentOutput == null) {
-                    AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_UNKNOWN_OUTPUT);
-                    logger.info("Posting Outputs Archive : output invalid (unknown output)");
+                if (!remainingOutputs.isEmpty()) {
+                    AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_MISSING_OUTPUTS);
+                    logger.info("Posting Outputs Archive : output invalid (missing outputs)");
                     run.setState(TaskRunState.FAILED);
                     runRepository.saveAndFlush(run);
                     logger.info("Posting Outputs Archive : updated Run state to FAILED");
