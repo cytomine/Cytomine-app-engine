@@ -78,20 +78,11 @@ public class UploadTaskApiExceptionHandler {
 
     @ExceptionHandler({IllegalArgumentException.class})
     public final ResponseEntity<AppEngineError> handleMalformattedBundle(Exception e) {
-        String message = "Bundle is not formatted correctly";
+        String message = e.getMessage();
         logger.info("Bundle/Archive processing failure [" + message + "]");
 
         AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_INVALID_BUNDLE_FORMAT);
         return new ResponseEntity<AppEngineError>(error, HttpStatus.BAD_REQUEST);
     }
 
-    @ExceptionHandler({NullPointerException.class})
-    public final ResponseEntity<AppEngineError> handleNullpointerException(Exception e) {
-        // TODO temp handler remove later
-        String message = "missing properties in descriptor.yml";
-        logger.info("Bundle/Archive processing failure [" + message + "]");
-
-        AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_INVALID_BUNDLE_FORMAT);
-        return new ResponseEntity<AppEngineError>(error, HttpStatus.INTERNAL_SERVER_ERROR);
-    }
 }

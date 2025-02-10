@@ -35,6 +35,10 @@ public class Task extends BaseEntity {
     private String outputFolder;
     private String imageName;
 
+    private int cpus;
+    private int gpus;
+    private String ram;
+
     @OneToMany(cascade = CascadeType.ALL , fetch = FetchType.LAZY)
     private Set<Author> authors;
     @OneToMany(cascade = CascadeType.ALL , fetch = FetchType.EAGER)

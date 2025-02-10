@@ -5,9 +5,7 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.fabric8.kubernetes.api.model.HostPathVolumeSourceBuilder;
-import io.fabric8.kubernetes.api.model.PodBuilder;
-import io.fabric8.kubernetes.api.model.VolumeBuilder;
+import io.fabric8.kubernetes.api.model.*;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import jakarta.annotation.PostConstruct;
@@ -76,7 +74,7 @@ public class KubernetesScheduler implements SchedulerHandler {
     @PostConstruct
     private void initUrl() throws SchedulingException {
         String port = environment.getProperty("server.port");
-        String hostAddress = getHostAddress();
+        String hostAddress = "http://172.17.0.1";//getHostAddress();
 
         this.baseUrl = hostAddress + ":" + port + "/app-engine/v1/task-runs/";
         this.baseInputPath = "/tmp/app-engine/task-run-inputs-";
@@ -114,81 +112,91 @@ public class KubernetesScheduler implements SchedulerHandler {
                 .withLabels(labels)
                 .endMetadata();
 
+        // Define resources for the task
+        ResourceRequirementsBuilder builder =
+                new ResourceRequirements()
+                        .toBuilder()
+                        .addToRequests("cpu", new Quantity(Integer.toString(task.getCpus())))
+                        .addToRequests("memory", new Quantity(task.getRam()))
+                        .addToLimits("cpu", new Quantity(Integer.toString(task.getCpus())))
+                        .addToLimits("memory", new Quantity(task.getRam()));
+
+        if (task.getGpus() > 0) {
+            builder = builder
+                    .addToRequests("nvidia.com/gpu", new Quantity(Integer.toString(task.getGpus())))
+                    .addToLimits("nvidia.com/gpu", new Quantity(Integer.toString(task.getGpus())));
+        }
+
+        ResourceRequirements resources = builder.build();
+
         // Defining the pod image to run
         podBuilder
-                .withNewSpec()
+        .withNewSpec()
 
-                // Pre-task for inputs provisioning
-                .addNewInitContainer()
-                .withName("inputs-provisioning")
-                .withImage("cytomineuliege/alpine-task-utils:latest")
-                .withImagePullPolicy("IfNotPresent")
-                .withCommand("/bin/sh", "-c", fetchInputs + and + unzipInputs)
+        // Pre-task for inputs provisioning
+        .addNewInitContainer()
+        .withName("inputs-provisioning")
+        .withImage("cytomineuliege/alpine-task-utils:latest")
+        .withImagePullPolicy("IfNotPresent")
+        .withCommand("/bin/sh", "-c", fetchInputs + and + unzipInputs)
 
-                // Mount volume for inputs provisioning
-                .addNewVolumeMount()
+        // Mount volume for inputs provisioning
+        .addNewVolumeMount()
+        .withName("inputs")
+        .withMountPath(task.getInputFolder())
+        .endVolumeMount()
+        .endInitContainer()
+
+        // Task container
+        .addNewContainer()
+        .withName("task")
+        .withImage(imageName)
+        .withImagePullPolicy("IfNotPresent")
+        .withTerminationMessagePath("/outputs/finished")
+
+        // request and limit resources
+        .withResources(resources)
+
+        // Mount volumes for inputs and outputs
+        .addNewVolumeMount()
+        .withName("inputs")
+        .withMountPath(task.getInputFolder())
+        .endVolumeMount()
+        .addNewVolumeMount()
+        .withName("outputs")
+        .withMountPath(task.getOutputFolder())
+        .endVolumeMount()
+        .endContainer()
+
+        // Post Task for outputs sending
+        .addNewContainer()
+        .withName("outputs-sending")
+        .withImage("cytomineuliege/alpine-task-utils:latest")
+        .withImagePullPolicy("IfNotPresent")
+        .withCommand("/bin/sh", "-c", wait + and + zipOutputs + and + sendOutputs)
+        .addNewVolumeMount()
+        .withName("outputs")
+        .withMountPath(task.getOutputFolder())
+        .endVolumeMount()
+        .endContainer()
+
+        // Mount volumes from the scheduler file system
+        .addToVolumes(
+            new VolumeBuilder()
                 .withName("inputs")
-                .withMountPath(task.getInputFolder())
-                .endVolumeMount()
-
-                .endInitContainer()
-
-                // Task container
-                .addNewContainer()
-                .withName("task")
-                .withImage(imageName)
-                .withImagePullPolicy("IfNotPresent")
-                .withTerminationMessagePath("/outputs/finished")
-
-                // Mount volumes for inputs and outputs
-                .addNewVolumeMount()
-                .withName("inputs")
-                .withMountPath(task.getInputFolder())
-                .endVolumeMount()
-
-                .addNewVolumeMount()
+                .withHostPath(
+                    new HostPathVolumeSourceBuilder().withPath(baseInputPath + runId).build())
+                .build())
+        .addToVolumes(
+            new VolumeBuilder()
                 .withName("outputs")
-                .withMountPath(task.getOutputFolder())
-                .endVolumeMount()
+                .withHostPath(
+                    new HostPathVolumeSourceBuilder().withPath(baseOutputPath + runId).build())
+                .build())
 
-                .endContainer()
-
-                // Post Task for outputs sending
-                .addNewContainer()
-                .withName("outputs-sending")
-                .withImage("cytomineuliege/alpine-task-utils:latest")
-                .withImagePullPolicy("IfNotPresent")
-                .withCommand(
-                    "/bin/sh",
-                    "-c",
-                    wait + and + zipOutputs + and + sendOutputs
-                )
-
-                .addNewVolumeMount()
-                .withName("outputs")
-                .withMountPath(task.getOutputFolder())
-                .endVolumeMount()
-
-                .endContainer()
-
-                // Mount volumes from the scheduler file system
-                .addToVolumes(new VolumeBuilder()
-                        .withName("inputs")
-                        .withHostPath(new HostPathVolumeSourceBuilder()
-                                .withPath(baseInputPath + runId)
-                                .build())
-                        .build())
-                .addToVolumes(new VolumeBuilder()
-                        .withName("outputs")
-                        .withHostPath(new HostPathVolumeSourceBuilder()
-                                .withPath(baseOutputPath + runId)
-                                .build())
-                        .build())
-
-                // Never restart the pod
-                .withRestartPolicy("Never")
-
-                .endSpec();
+        // Never restart the pod
+        .withRestartPolicy("Never")
+        .endSpec();
 
         log.info("Schedule: Task Pod scheduled to run on the cluster");
         try {
