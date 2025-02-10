@@ -5,7 +5,9 @@ import java.net.UnknownHostException;
 import java.util.HashMap;
 import java.util.Map;
 
-import io.fabric8.kubernetes.api.model.*;
+import io.fabric8.kubernetes.api.model.HostPathVolumeSourceBuilder;
+import io.fabric8.kubernetes.api.model.PodBuilder;
+import io.fabric8.kubernetes.api.model.VolumeBuilder;
 import io.fabric8.kubernetes.client.KubernetesClient;
 import io.fabric8.kubernetes.client.KubernetesClientException;
 import jakarta.annotation.PostConstruct;
@@ -21,6 +23,8 @@ import be.cytomine.appengine.handlers.SchedulerHandler;
 import be.cytomine.appengine.handlers.scheduler.impl.utils.PodInformer;
 import be.cytomine.appengine.models.task.Run;
 import be.cytomine.appengine.models.task.Task;
+import be.cytomine.appengine.repositories.RunRepository;
+import be.cytomine.appengine.states.TaskRunState;
 
 @Slf4j
 public class KubernetesScheduler implements SchedulerHandler {
@@ -33,6 +37,9 @@ public class KubernetesScheduler implements SchedulerHandler {
 
     @Autowired
     private PodInformer podInformer;
+
+    @Autowired
+    private RunRepository runRepository;
 
     @Value("${app-engine.api_prefix}")
     private String apiPrefix;
@@ -76,7 +83,7 @@ public class KubernetesScheduler implements SchedulerHandler {
         String port = environment.getProperty("server.port");
         String hostAddress = "http://172.17.0.1";//getHostAddress();
 
-        this.baseUrl = hostAddress + ":" + port + "/app-engine/v1/task-runs/";
+        this.baseUrl = hostAddress + ":" + port + apiPrefix + apiVersion + "/task-runs/";
         this.baseInputPath = "/tmp/app-engine/task-run-inputs-";
         this.baseOutputPath = "/tmp/app-engine/task-run-outputs-";
     }
@@ -98,7 +105,11 @@ public class KubernetesScheduler implements SchedulerHandler {
         String unzipInputs = "unzip -o inputs.zip -d " + task.getInputFolder();
         String sendOutputs = "curl -X POST -F 'outputs=@outputs.zip' " + url + "/outputs.zip";
         String zipOutputs = "zip -rj outputs.zip " + task.getOutputFolder();
-        String wait = "while [ ! -f /outputs/finished ]; do sleep 2; done; rm /outputs/finished";
+        String wait = "export TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token); ";
+        wait += "while ! curl -k -H \"Authorization: Bearer $TOKEN\" ";
+        wait += "https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT_HTTPS}/api/v1/namespaces/default/pods/${HOSTNAME}/status ";
+        wait += "| jq '.status | .containerStatuses[] | select(.name == \"task\") | .state | keys[0]' ";
+        wait += "| grep -q -F \"terminated\"; do sleep 2; done";
         String and = " && ";
 
         Map<String, String> labels = new HashMap<>() {{
@@ -153,6 +164,11 @@ public class KubernetesScheduler implements SchedulerHandler {
         .withImage(imageName)
         .withImagePullPolicy("IfNotPresent")
         .withTerminationMessagePath("/outputs/finished")
+                // Task container
+                .addNewContainer()
+                .withName("task")
+                .withImage(imageName)
+                .withImagePullPolicy("IfNotPresent")
 
         // request and limit resources
         .withResources(resources)
@@ -209,6 +225,9 @@ public class KubernetesScheduler implements SchedulerHandler {
             e.printStackTrace();
             throw new SchedulingException("Task Pod failed to be scheduled on the cluster");
         }
+
+        run.setState(TaskRunState.QUEUED);
+        runRepository.saveAndFlush(run);
         log.info("Schedule: Task Pod queued for execution on the cluster");
 
         return schedule;
