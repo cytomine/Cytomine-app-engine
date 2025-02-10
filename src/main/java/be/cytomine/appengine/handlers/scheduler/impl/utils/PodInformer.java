@@ -54,7 +54,7 @@ public class PodInformer implements ResourceEventHandler<Pod> {
     @Override
     public void onAdd(Pod pod) {
         Run run = getRun(pod);
-        if (FINAL_STATES.contains(run.getState())) {
+        if (run == null || FINAL_STATES.contains(run.getState())) {
             return;
         }
 
