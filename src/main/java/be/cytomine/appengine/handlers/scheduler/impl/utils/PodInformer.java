@@ -65,7 +65,9 @@ public class PodInformer implements ResourceEventHandler<Pod> {
     @Override
     public void onUpdate(Pod oldPod, Pod newPod) {
         Run run = getRun(newPod);
-        if (FINAL_STATES.contains(run.getState()) || newPod.getStatus().getPhase().equals("Pending")) {
+        boolean isFinalState = FINAL_STATES.contains(run.getState());
+        boolean isPending = newPod.getStatus().getPhase().equals("Pending");
+        if (isFinalState || isPending) {
             return;
         }
 

@@ -107,8 +107,8 @@ public class KubernetesScheduler implements SchedulerHandler {
         String wait = "export TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token); ";
         wait += "while ! curl -k -H \"Authorization: Bearer $TOKEN\" ";
         wait += "https://${KUBERNETES_SERVICE_HOST}:${KUBERNETES_SERVICE_PORT_HTTPS}/api/v1/namespaces/default/pods/${HOSTNAME}/status ";
-        wait += "| jq '.status | .containerStatuses[] | select(.name == \"task\") | .state | keys[0]' ";
-        wait += "| grep -q -F \"terminated\"; do sleep 2; done";
+        wait += "| jq '.status | .containerStatuses[] | select(.name == \"task\") | .state ";
+        wait += "| keys[0]' | grep -q -F \"terminated\"; do sleep 2; done";
         String and = " && ";
 
         Map<String, String> labels = new HashMap<>() {
