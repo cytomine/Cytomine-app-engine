@@ -32,26 +32,26 @@ public class TypeFactory {
         }
     }
 
-    public static Type createType(JsonNode node , String charset) {
+    public static Type createType(JsonNode node, String charset) {
         JsonNode typeNode = node.get("type");
         // add new types here
         String typeId = getTypeId(typeNode);
         return switch (typeId) {
-            case "boolean" -> createBooleanType(typeId , charset);
-            case "integer" -> createIntegerType(typeNode, typeId , charset);
-            case "number" -> createNumberType(typeNode, typeId , charset);
-            case "string" -> createStringType(typeNode, typeId , charset);
-            case "enumeration" -> createEnumerationType(typeNode, typeId , charset);
-            case "geometry" -> createGeometryType(typeId , charset);
-            case "image" -> createImageType(typeNode, typeId , charset);
-            case "wsi" -> createWsiType(typeNode, typeId , charset);
-            case "file" -> createFileType(typeNode, typeId , charset);
+            case "boolean" -> createBooleanType(typeId, charset);
+            case "integer" -> createIntegerType(typeNode, typeId, charset);
+            case "number" -> createNumberType(typeNode, typeId, charset);
+            case "string" -> createStringType(typeNode, typeId, charset);
+            case "enumeration" -> createEnumerationType(typeNode, typeId, charset);
+            case "geometry" -> createGeometryType(typeId, charset);
+            case "image" -> createImageType(typeNode, typeId, charset);
+            case "wsi" -> createWsiType(typeNode, typeId, charset);
+            case "file" -> createFileType(typeNode, typeId, charset);
             default -> new Type();
         };
     }
 
     @NotNull
-    private static BooleanType createBooleanType(String typeId , String charset) {
+    private static BooleanType createBooleanType(String typeId, String charset) {
         BooleanType type = new BooleanType();
         type.setId(typeId);
         type.setCharset(charset);
@@ -60,7 +60,7 @@ public class TypeFactory {
     }
 
     @NotNull
-    private static IntegerType createIntegerType(JsonNode typeNode, String typeId , String charset) {
+    private static IntegerType createIntegerType(JsonNode typeNode, String typeId, String charset) {
         IntegerType type = new IntegerType();
         type.setId(typeId);
         type.setCharset(charset);
@@ -79,7 +79,7 @@ public class TypeFactory {
     }
 
     @NotNull
-    private static NumberType createNumberType(JsonNode typeNode, String typeId , String charset) {
+    private static NumberType createNumberType(JsonNode typeNode, String typeId, String charset) {
         NumberType type = new NumberType();
         type.setId(typeId);
         type.setCharset(charset);
@@ -98,7 +98,7 @@ public class TypeFactory {
     }
 
     @NotNull
-    private static StringType createStringType(JsonNode typeNode, String typeId , String charset) {
+    private static StringType createStringType(JsonNode typeNode, String typeId, String charset) {
         StringType type = new StringType();
         type.setId(typeId);
         type.setCharset(charset);
@@ -117,7 +117,11 @@ public class TypeFactory {
     }
 
     @NotNull
-    private static EnumerationType createEnumerationType(JsonNode typeNode, String typeId , String charset) {
+    private static EnumerationType createEnumerationType(
+        JsonNode typeNode,
+        String typeId,
+        String charset
+    ) {
         EnumerationType type = new EnumerationType();
         type.setId(typeId);
         type.setCharset(charset);
@@ -136,7 +140,7 @@ public class TypeFactory {
     }
 
     @NotNull
-    private static GeometryType createGeometryType(String typeId , String charset) {
+    private static GeometryType createGeometryType(String typeId, String charset) {
         GeometryType type = new GeometryType();
         type.setId(typeId);
         type.setCharset(charset);
@@ -145,7 +149,7 @@ public class TypeFactory {
     }
 
     @NotNull
-    private static ImageType createImageType(JsonNode typeNode, String typeId , String charset) {
+    private static ImageType createImageType(JsonNode typeNode, String typeId, String charset) {
         ImageType type = new ImageType();
         type.setId(typeId);
         type.setCharset(charset);
@@ -160,7 +164,7 @@ public class TypeFactory {
     }
 
     @NotNull
-    private static WsiType createWsiType(JsonNode typeNode, String typeId , String charset) {
+    private static WsiType createWsiType(JsonNode typeNode, String typeId, String charset) {
         WsiType type = new WsiType();
         type.setId(typeId);
         type.setCharset(charset);
@@ -175,7 +179,7 @@ public class TypeFactory {
     }
 
     @NotNull
-    private static FileType createFileType(JsonNode typeNode, String typeId , String charset) {
+    private static FileType createFileType(JsonNode typeNode, String typeId, String charset) {
         FileType type = new FileType();
         type.setId(typeId);
         type.setCharset(charset);

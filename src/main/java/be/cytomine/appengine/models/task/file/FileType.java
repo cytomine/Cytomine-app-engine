@@ -99,7 +99,9 @@ public class FileType extends Type {
         byte[] inputFileData = null;
         try {
             inputFileData = provision.get("value").binaryValue();
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
         StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName, StorageDataType.FILE);
         return new StorageData(storageDataEntry);
     }
