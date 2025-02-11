@@ -47,6 +47,12 @@ public class KubernetesScheduler implements SchedulerHandler {
   @Value("${registry-client.port}")
   private String registryPort;
 
+  @Value("${scheduler.helper-containers-resources.ram}")
+  private String helperContainerRam;
+
+  @Value("${scheduler.helper-containers-resources.cpu}")
+  private String helperContainerCpu;
+
   private String baseUrl;
 
   private String baseInputPath;
@@ -75,7 +81,7 @@ public class KubernetesScheduler implements SchedulerHandler {
   @PostConstruct
   private void initUrl() throws SchedulingException {
     String port = environment.getProperty("server.port");
-    String hostAddress = "http://172.17.0.1"; // getHostAddress();
+    String hostAddress = getHostAddress();
 
     this.baseUrl = hostAddress + ":" + port + apiPrefix + apiVersion + "/task-runs/";
     this.baseInputPath = "/tmp/app-engine/task-run-inputs-";
@@ -118,8 +124,18 @@ public class KubernetesScheduler implements SchedulerHandler {
     PodBuilder podBuilder =
         new PodBuilder().withNewMetadata().withName(podName).withLabels(labels).endMetadata();
 
-    // Define resources for the task
-    ResourceRequirementsBuilder builder =
+    // Define taskResources for the task
+    ResourceRequirementsBuilder helperContainersResourcesBuilder =
+            new ResourceRequirements()
+                    .toBuilder()
+                    .addToRequests("cpu", new Quantity(helperContainerCpu))
+                    .addToRequests("memory", new Quantity(helperContainerRam))
+                    .addToLimits("cpu", new Quantity(helperContainerCpu))
+                    .addToLimits("memory", new Quantity(helperContainerRam));
+
+    ResourceRequirements helperContainersResources = helperContainersResourcesBuilder.build();
+    // Define task resources for the task
+    ResourceRequirementsBuilder taskResourcesBuilder =
         new ResourceRequirements()
             .toBuilder()
                 .addToRequests("cpu", new Quantity(Integer.toString(task.getCpus())))
@@ -128,13 +144,13 @@ public class KubernetesScheduler implements SchedulerHandler {
                 .addToLimits("memory", new Quantity(task.getRam()));
 
     if (task.getGpus() > 0) {
-      builder =
-          builder
+      taskResourcesBuilder =
+          taskResourcesBuilder
               .addToRequests("nvidia.com/gpu", new Quantity(Integer.toString(task.getGpus())))
               .addToLimits("nvidia.com/gpu", new Quantity(Integer.toString(task.getGpus())));
     }
 
-    ResourceRequirements resources = builder.build();
+    ResourceRequirements taskResources = taskResourcesBuilder.build();
 
     // Defining the pod image to run
     podBuilder
@@ -146,6 +162,9 @@ public class KubernetesScheduler implements SchedulerHandler {
         .withImage("cytomineuliege/alpine-task-utils:latest")
         .withImagePullPolicy("IfNotPresent")
         .withCommand("/bin/sh", "-c", fetchInputs + and + unzipInputs)
+
+        // request and limit helper container resources
+        .withResources(helperContainersResources)
 
         // Mount volume for inputs provisioning
         .addNewVolumeMount()
@@ -160,8 +179,8 @@ public class KubernetesScheduler implements SchedulerHandler {
         .withImage(imageName)
         .withImagePullPolicy("IfNotPresent")
 
-        // request and limit resources
-        .withResources(resources)
+        // request and limit task resources
+        .withResources(taskResources)
 
         // Mount volumes for inputs and outputs
         .addNewVolumeMount()
@@ -180,6 +199,10 @@ public class KubernetesScheduler implements SchedulerHandler {
         .withImage("cytomineuliege/alpine-task-utils:latest")
         .withImagePullPolicy("IfNotPresent")
         .withCommand("/bin/sh", "-c", wait + and + zipOutputs + and + sendOutputs)
+
+        // request and limit helper container resources
+        .withResources(helperContainersResources)
+
         .addNewVolumeMount()
         .withName("outputs")
         .withMountPath(task.getOutputFolder())
