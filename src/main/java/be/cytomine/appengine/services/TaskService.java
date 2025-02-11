@@ -3,11 +3,13 @@ package be.cytomine.appengine.services;
 import java.time.LocalDateTime;
 import java.util.*;
 
+import be.cytomine.appengine.handlers.StorageData;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.transaction.Transactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -19,8 +21,7 @@ import be.cytomine.appengine.dto.responses.errors.AppEngineError;
 import be.cytomine.appengine.dto.responses.errors.ErrorBuilder;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.*;
-import be.cytomine.appengine.handlers.FileData;
-import be.cytomine.appengine.handlers.FileStorageHandler;
+import be.cytomine.appengine.handlers.StorageHandler;
 import be.cytomine.appengine.handlers.RegistryHandler;
 import be.cytomine.appengine.models.task.*;
 import be.cytomine.appengine.repositories.RunRepository;
@@ -37,13 +38,26 @@ public class TaskService {
 
     private final RunRepository runRepository;
 
-    private final FileStorageHandler fileStorageHandler;
+    private final StorageHandler fileStorageHandler;
 
     private final RegistryHandler registryHandler;
 
     private final TaskValidationService taskValidationService;
 
     private final ArchiveUtils archiveUtils;
+
+    @Value("${storage.input.charset}")
+    private String charset;
+
+
+    public TaskService(TaskRepository taskRepository, RunRepository runRepository, StorageHandler fileStorageHandler, RegistryHandler registryHandler, TaskValidationService taskValidationService, ArchiveUtils archiveUtils) {
+        this.taskRepository = taskRepository;
+        this.runRepository = runRepository;
+        this.fileStorageHandler = fileStorageHandler;
+        this.registryHandler = registryHandler;
+        this.taskValidationService = taskValidationService;
+        this.archiveUtils = archiveUtils;
+    }
 
     @Transactional
     public Optional<TaskDescription> uploadTask(MultipartFile taskArchive) throws TaskServiceException, ValidationException, BundleArchiveException {
@@ -68,8 +82,8 @@ public class TaskService {
         }
 
         try {
-            fileStorageHandler.createFile(storage, new FileData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
-            log.info("UploadTask: descriptor.yml is stored in object storage");
+            fileStorageHandler.saveStorageData(storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
+            log.info("UploadTask : descriptor.yml is stored in object storage");
         } catch (FileStorageException e) {
             try {
                 log.info("UploadTask: failed to store descriptor.yml, attempting deleting storage...");
@@ -144,7 +158,7 @@ public class TaskService {
                 input.setDisplayName(inputValue.get("display_name").textValue());
                 input.setDescription(inputValue.get("description").textValue());
                 // use type factory to generate the correct type
-                input.setType(TypeFactory.createType(inputValue));
+                input.setType(TypeFactory.createType(inputValue , charset));
 
                 // Set default value
                 JsonNode defaultNode = inputValue.get("default");
@@ -191,7 +205,7 @@ public class TaskService {
             output.setDisplayName(inputValue.get("display_name").textValue());
             output.setDescription(inputValue.get("description").textValue());
             // use type factory to generate the correct type
-            output.setType(TypeFactory.createType(inputValue));
+            output.setType(TypeFactory.createType(inputValue , charset));
 
             JsonNode dependencies = inputValue.get("dependencies");
             if (dependencies != null && dependencies.isObject()) {
@@ -245,15 +259,15 @@ public class TaskService {
         return new TaskIdentifiers(taskLocalIdentifier, storageIdentifier, imageRegistryCompliantName);
     }
 
-    public FileData retrieveYmlDescriptor(String namespace, String version) throws TaskServiceException, TaskNotFoundException {
-        log.info("Storage: retrieving descriptor.yml...");
+    public StorageData retrieveYmlDescriptor(String namespace, String version) throws TaskServiceException, TaskNotFoundException {
+        log.info("Storage : retrieving descriptor.yml...");
         Task task = taskRepository.findByNamespaceAndVersion(namespace, version);
         if (task == null)
             throw new TaskNotFoundException("task not found");
 
-        FileData file = new FileData("descriptor.yml", task.getStorageReference());
+        StorageData file = new StorageData("descriptor.yml", task.getStorageReference());
         try {
-            file = fileStorageHandler.readFile(file);
+            file = fileStorageHandler.readStorageData(file);
         } catch (FileStorageException ex) {
             log.debug("Storage: failed to get file from storage [{}]", ex.getMessage());
             throw new TaskServiceException(ex);
@@ -261,20 +275,20 @@ public class TaskService {
         return file;
     }
 
-    public FileData retrieveYmlDescriptor(String id) throws TaskServiceException, TaskNotFoundException {
-        log.info("Storage: retrieving descriptor.yml...");
+    public StorageData retrieveYmlDescriptor(String id) throws TaskServiceException, TaskNotFoundException {
+        log.info("Storage : retrieving descriptor.yml...");
         Optional<Task> task = taskRepository.findById(UUID.fromString(id));
         if (task.isEmpty()) {
             throw new TaskNotFoundException("task not found");
         }
-
-        FileData file = new FileData("descriptor.yml", task.get().getStorageReference());
+        StorageData file = new StorageData("descriptor.yml", task.get().getStorageReference());
         try {
-            return fileStorageHandler.readFile(file);
+            file = fileStorageHandler.readStorageData(file);
         } catch (FileStorageException ex) {
             log.debug("Storage: failed to get file from storage [{}]", ex.getMessage());
             throw new TaskServiceException(ex);
         }
+        return file;
     }
 
     public Optional<TaskDescription> retrieveTaskDescription(String id) {
