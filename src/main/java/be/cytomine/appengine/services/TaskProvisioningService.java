@@ -1,9 +1,12 @@
 package be.cytomine.appengine.services;
 
-import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.HashSet;
@@ -313,86 +316,49 @@ public class TaskProvisioningService {
         }
     }
 
-    public StorageData retrieveInputsZipArchive(
-        String runId
+    public StorageData retrieveIOZipArchive(
+        String runId,
+        ParameterType type
     ) throws ProvisioningException, FileStorageException, IOException {
-        log.info("Retrieving Inputs Archive: retrieving...");
+        log.info("Retrieving IO Archive: retrieving...");
         Run run = getRunIfValid(runId);
         if (run.getState().equals(TaskRunState.CREATED)) {
             AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_INVALID_TASK_RUN_STATE);
             throw new ProvisioningException(error);
         }
 
-        log.info("Retrieving Inputs Archive: fetching from storage...");
+        log.info("Retrieving IO Archive: fetching from storage...");
         @SuppressWarnings("checkstyle:lineLength")
         List<TypePersistence> provisions = typePersistenceRepository.findTypePersistenceByRunIdAndParameterType(run.getId(), ParameterType.INPUT);
         if (provisions.isEmpty()) {
             AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_PROVISIONS_NOT_FOUND);
             throw new ProvisioningException(error);
         }
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        log.info("Retrieving Inputs Archive: zipping...");
-        ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream);
+
+        log.info("Retrieving IO Archive: zipping...");
+
+        String io = type.equals(ParameterType.INPUT) ? "inputs" : "outputs";
+        Path tempFile = Files.createTempFile(io + "-archive-", runId);
+        ZipOutputStream zipOut = new ZipOutputStream(Files.newOutputStream(tempFile));
         for (TypePersistence provision : provisions) {
             StorageData provisionFileData = fileStorageHandler.readStorageData(
-                new StorageData(provision.getParameterName(), "task-run-inputs-" + run.getId())
+                new StorageData(provision.getParameterName(), "task-run-" + io + "-" + run.getId())
             );
+
             while (!provisionFileData.isEmpty()) {
                 StorageDataEntry current = provisionFileData.poll();
                 ZipEntry zipEntry = new ZipEntry(current.getName());
                 zipOut.putNextEntry(zipEntry);
                 if (current.getStorageDataType().equals(StorageDataType.FILE)) {
-                    zipOut.write(current.getData());
+                    Files.copy(current.getData().toPath(), zipOut);
                 }
                 zipOut.closeEntry();
             }
         }
         zipOut.close();
-        byteArrayOutputStream.close();
-        log.info("Retrieving Inputs Archive: zipped...");
-        return new StorageData(byteArrayOutputStream.toByteArray());
-    }
 
-    public StorageData retrieveOutputsZipArchive(
-        String runId
-    ) throws ProvisioningException, FileStorageException, IOException {
-        log.info("Retrieving Outputs Archive: retrieving...");
-        Optional<Run> runOptional = runRepository.findById(UUID.fromString(runId));
-        if (runOptional.isEmpty()) {
-            AppEngineError error = ErrorBuilder.build(ErrorCode.RUN_NOT_FOUND);
-            throw new ProvisioningException(error);
-        }
-
-        Run run = runOptional.get();
-        if (!run.getState().equals(TaskRunState.FINISHED)) {
-            AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_INVALID_TASK_RUN_STATE);
-            throw new ProvisioningException(error);
-        }
-
-        // fetch results from storage
-        @SuppressWarnings("checkstyle:LineLength")
-        List<TypePersistence> results = typePersistenceRepository.findTypePersistenceByRunIdAndParameterType(runOptional.get().getId(), ParameterType.OUTPUT);
-        ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        log.info("Retrieving Outputs Archive: zipping...");
-        ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream);
-        for (TypePersistence result : results) {
-            StorageData provisionFileData = fileStorageHandler.readStorageData(
-                new StorageData(result.getParameterName(), "task-run-outputs-" + run.getId())
-            );
-            while (!provisionFileData.isEmpty()) {
-                StorageDataEntry current = provisionFileData.poll();
-                ZipEntry zipEntry = new ZipEntry(current.getName());
-                zipOut.putNextEntry(zipEntry);
-                if (current.getStorageDataType().equals(StorageDataType.FILE)) {
-                    zipOut.write(current.getData());
-                }
-                zipOut.closeEntry();
-            }
-        }
-        zipOut.close();
-        byteArrayOutputStream.close();
-        log.info("Retrieving Outputs Archive: zipped...");
-        return new StorageData(byteArrayOutputStream.toByteArray());
+        log.info("Retrieving IO Archive: zipped...");
+        return new StorageData(tempFile.toFile());
     }
 
     public List<TaskRunParameterValue> postOutputsZipArchive(
@@ -486,11 +452,11 @@ public class TaskProvisioningService {
                     parameterZipEntryStorageData = new StorageData(outputName);
                     contentsOfZip.add(parameterZipEntryStorageData);
                 } else {
-                    byte[] rawOutput = zais.readNBytes((int) ze.getSize());
-                    parameterZipEntryStorageData = new StorageData(rawOutput, outputName);
+                    Path tempFile = Files.createTempFile(outputName, null);
+                    Files.copy(zais, tempFile, StandardCopyOption.REPLACE_EXISTING);
+                    parameterZipEntryStorageData = new StorageData(tempFile.toFile(), outputName);
                     contentsOfZip.add(parameterZipEntryStorageData);
                 }
-
             }
             // a compaction step
             // order by the length of name 
@@ -640,7 +606,7 @@ public class TaskProvisioningService {
         return inputList;
     }
 
-    public byte[] retrieveSingleRunIO(
+    public File retrieveSingleRunIO(
         String runId,
         String parameterName,
         ParameterType type
