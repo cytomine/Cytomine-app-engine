@@ -6,7 +6,7 @@ import java.util.*;
 import be.cytomine.appengine.handlers.StorageData;
 import com.fasterxml.jackson.databind.JsonNode;
 import jakarta.transaction.Transactional;
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
 import org.springframework.beans.factory.annotation.Value;
@@ -30,7 +30,7 @@ import be.cytomine.appengine.states.TaskRunState;
 import be.cytomine.appengine.utils.ArchiveUtils;
 
 @Slf4j
-@AllArgsConstructor
+@RequiredArgsConstructor
 @Service
 public class TaskService {
 
@@ -48,16 +48,6 @@ public class TaskService {
 
     @Value("${storage.input.charset}")
     private String charset;
-
-
-    public TaskService(TaskRepository taskRepository, RunRepository runRepository, StorageHandler fileStorageHandler, RegistryHandler registryHandler, TaskValidationService taskValidationService, ArchiveUtils archiveUtils) {
-        this.taskRepository = taskRepository;
-        this.runRepository = runRepository;
-        this.fileStorageHandler = fileStorageHandler;
-        this.registryHandler = registryHandler;
-        this.taskValidationService = taskValidationService;
-        this.archiveUtils = archiveUtils;
-    }
 
     @Transactional
     public Optional<TaskDescription> uploadTask(MultipartFile taskArchive) throws TaskServiceException, ValidationException, BundleArchiveException {
