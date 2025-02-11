@@ -1,11 +1,23 @@
 package be.cytomine.appengine.models.task.number;
 
+import java.util.UUID;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.dto.inputs.task.types.number.NumberTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.number.NumberValue;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.TypeValidationException;
-import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.StorageData;
+import be.cytomine.appengine.handlers.StorageDataEntry;
+import be.cytomine.appengine.handlers.StorageDataType;
 import be.cytomine.appengine.models.task.Output;
 import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.models.task.Run;
@@ -14,17 +26,8 @@ import be.cytomine.appengine.models.task.TypePersistence;
 import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.number.NumberPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-
-import java.util.UUID;
-
+@SuppressWarnings("checkstyle:LineLength")
 @Data
 @Entity
 @EqualsAndHashCode(callSuper = true)
@@ -32,14 +35,18 @@ public class NumberType extends Type {
 
     @Column(nullable = true)
     private Double gt;
+
     @Column(nullable = true)
     private Double geq;
+
     @Column(nullable = true)
     private Double lt;
+
     @Column(nullable = true)
     private Double leq;
 
     private boolean infinityAllowed = false;
+
     private boolean nanAllowed = false;
 
     public void setConstraint(NumberTypeConstraint constraint, String value) {
@@ -62,6 +69,7 @@ public class NumberType extends Type {
             case NAN_ALLOWED:
                 this.setNanAllowed(Boolean.parseBoolean(value));
                 break;
+            default:
         }
     }
 
@@ -121,10 +129,12 @@ public class NumberType extends Type {
     }
 
     @Override
-    public void persistResult(Run run, Output currentOutput, String outputValue) {
+    public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         NumberPersistenceRepository numberPersistenceRepository = AppEngineApplicationContext.getBean(NumberPersistenceRepository.class);
         NumberPersistence result = numberPersistenceRepository.findNumberPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        double value = Double.parseDouble(outputValue);
+        String output = new String(outputValue.poll().getData(), getStorageCharset());
+        String trimmedOutput = output.trim();
+        double value = Double.parseDouble(trimmedOutput);
         if (result == null) {
             result = new NumberPersistence();
             result.setValueType(ValueType.NUMBER);
@@ -140,12 +150,12 @@ public class NumberType extends Type {
     }
 
     @Override
-    public FileData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision) {
         String value = provision.get("value").asText();
         String parameterName = provision.get("param_name").asText();
-        byte[] inputFileData = value.getBytes(getStorageCharset(charset));
-
-        return new FileData(inputFileData, parameterName);
+        byte[] inputFileData = value.getBytes(getStorageCharset());
+        StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName, StorageDataType.FILE);
+        return new StorageData(storageDataEntry);
     }
 
     @Override
@@ -160,7 +170,10 @@ public class NumberType extends Type {
     }
 
     @Override
-    public TaskRunParameterValue buildTaskRunParameterValue(String trimmedOutput, UUID id, String outputName) {
+    public TaskRunParameterValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
+        String outputValue = new String(output.poll().getData(), getStorageCharset());
+        String trimmedOutput = outputValue.trim();
+
         NumberValue value = new NumberValue();
         value.setParameterName(outputName);
         value.setTaskRunId(id);

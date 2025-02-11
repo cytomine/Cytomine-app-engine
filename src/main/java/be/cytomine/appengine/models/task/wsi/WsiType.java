@@ -9,7 +9,6 @@ import java.util.stream.Collectors;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Transient;
@@ -20,7 +19,9 @@ import be.cytomine.appengine.dto.inputs.task.types.wsi.WsiTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.wsi.WsiValue;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.TypeValidationException;
-import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.StorageData;
+import be.cytomine.appengine.handlers.StorageDataEntry;
+import be.cytomine.appengine.handlers.StorageDataType;
 import be.cytomine.appengine.models.task.Output;
 import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.models.task.Run;
@@ -32,8 +33,9 @@ import be.cytomine.appengine.repositories.wsi.WsiPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import be.cytomine.appengine.utils.units.Unit;
 
-@Entity
+@SuppressWarnings("checkstyle:LineLength")
 @Data
+@Entity
 @EqualsAndHashCode(callSuper = true)
 public class WsiType extends Type {
 
@@ -66,6 +68,7 @@ public class WsiType extends Type {
             case MAX_HEIGHT:
                 this.setMaxHeight(value.asInt());
                 break;
+            default:
         }
     }
 
@@ -76,15 +79,15 @@ public class WsiType extends Type {
         }
 
         List<FileFormat> checkers = formats
-                .stream()
-                .map(WsiFormatFactory::getFormat)
-                .collect(Collectors.toList());
+            .stream()
+            .map(WsiFormatFactory::getFormat)
+            .collect(Collectors.toList());
 
         this.format = checkers
-                .stream()
-                .filter(checker -> checker.checkSignature(file))
-                .findFirst()
-                .orElse(null);
+            .stream()
+            .filter(checker -> checker.checkSignature(file))
+            .findFirst()
+            .orElse(null);
 
         if (this.format == null) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_FORMAT);
@@ -116,7 +119,9 @@ public class WsiType extends Type {
         }
 
         if (!Unit.isValid(maxFileSize)) {
-            throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE_FORMAT);
+            throw new TypeValidationException(
+                ErrorCode.INTERNAL_PARAMETER_INVALID_IMAGE_SIZE_FORMAT
+            );
         }
 
         Unit unit = new Unit(maxFileSize);
@@ -159,7 +164,7 @@ public class WsiType extends Type {
     }
 
     @Override
-    public void persistResult(Run run, Output currentOutput, String outputValue) {
+    public void persistResult(Run run, Output currentOutput, StorageData  outputValue) {
         WsiPersistenceRepository wsiPersistenceRepository = AppEngineApplicationContext.getBean(WsiPersistenceRepository.class);
         WsiPersistence result = wsiPersistenceRepository.findWsiPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result != null) {
@@ -176,15 +181,18 @@ public class WsiType extends Type {
     }
 
     @Override
-    public FileData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision) {
         String parameterName = provision.get("param_name").asText();
         byte[] inputFileData = null;
 
         try {
             inputFileData = provision.get("value").binaryValue();
-        } catch (IOException ignored) {}
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
 
-        return new FileData(inputFileData, parameterName);
+        StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName, StorageDataType.FILE);
+        return new StorageData(storageDataEntry);
     }
 
     @Override
@@ -198,7 +206,7 @@ public class WsiType extends Type {
     }
 
     @Override
-    public WsiValue buildTaskRunParameterValue(String output, UUID id, String outputName) {
+    public WsiValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
         WsiValue wsiValue = new WsiValue();
         wsiValue.setParameterName(outputName);
         wsiValue.setTaskRunId(id);

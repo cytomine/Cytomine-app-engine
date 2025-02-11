@@ -1,26 +1,21 @@
 package be.cytomine.appengine.utils;
 
+import java.util.*;
+import java.io.*;
+
+import com.fasterxml.jackson.databind.JsonNode;
+import org.springframework.core.io.ClassPathResource;
+import org.springframework.mock.web.MockMultipartFile;
 
 import be.cytomine.appengine.dto.inputs.task.UploadTaskArchive;
 import be.cytomine.appengine.dto.misc.TaskIdentifiers;
 import be.cytomine.appengine.exceptions.BundleArchiveException;
-import be.cytomine.appengine.exceptions.ValidationException;
 import be.cytomine.appengine.models.task.Author;
 import be.cytomine.appengine.models.task.Input;
 import be.cytomine.appengine.models.task.integer.IntegerType;
 import be.cytomine.appengine.models.task.Output;
 import be.cytomine.appengine.models.task.Task;
 import be.cytomine.appengine.models.task.TypeFactory;
-
-import org.springframework.core.io.ClassPathResource;
-import org.springframework.mock.web.MockMultipartFile;
-
-import com.fasterxml.jackson.databind.JsonNode;
-
-import java.util.*;
-import java.io.*;
-
-
 
 public class TestTaskBuilder {
   public static Task buildHardcodedAddInteger(UUID taskUUID) {
@@ -40,6 +35,7 @@ public class TestTaskBuilder {
     task.setDescription("");
     task.setInputFolder("/inputs");
     task.setOutputFolder("/outputs");
+
     // add authors
     Set<Author> authors = new HashSet<>();
     Author author = new Author();
@@ -59,6 +55,7 @@ public class TestTaskBuilder {
     inputa.setDescription("First operand");
     IntegerType inputType1_1 = new IntegerType();
     inputType1_1.setId("integer");
+    inputType1_1.setCharset("UTF_8");
     inputa.setType(inputType1_1);
     inputa.setDefaultValue("0");
 
@@ -68,6 +65,7 @@ public class TestTaskBuilder {
     inputb.setDescription("Second operand");
     IntegerType inputType1_2 = new IntegerType();
     inputType1_2.setId("integer");
+    inputType1_2.setCharset("UTF_8");
     inputb.setType(inputType1_2);
     inputb.setDefaultValue("0");
 
@@ -82,6 +80,7 @@ public class TestTaskBuilder {
     output.setDescription("Sum of operands A and B");
     IntegerType outputType = new IntegerType();
     outputType.setId("integer");
+    outputType.setCharset("UTF_8");
     output.setType(outputType);
     outputs.add(output);
     task.setOutputs(outputs);
@@ -183,7 +182,6 @@ public class TestTaskBuilder {
     return new ClassPathResource("/artifacts/" + bundleFilename);
   }
 
-
   public static Task buildTaskFromResource(String bundleFilename) {
     return buildTaskFromResource(bundleFilename, UUID.randomUUID());
   }
@@ -199,7 +197,7 @@ public class TestTaskBuilder {
         fos.write(taskArchive.getDescriptorFile());
         return tempFile;
       }
-    } catch (IOException | ValidationException | BundleArchiveException e) {
+    } catch (IOException | BundleArchiveException e) {
       throw new RuntimeException(e);
     }
   }
@@ -231,7 +229,7 @@ public class TestTaskBuilder {
       task.setInputs(getInputs(taskArchive));
       task.setOutputs(getOnputs(taskArchive));
       return task;
-    } catch(IOException | ValidationException | BundleArchiveException e) {
+    } catch(IOException | BundleArchiveException e) {
       throw new RuntimeException(e);
     }
   }
@@ -250,7 +248,7 @@ public class TestTaskBuilder {
         input.setDisplayName(inputValue.get("display_name").textValue());
         input.setDescription(inputValue.get("description").textValue());
         // use type factory to generate the correct type
-        input.setType(TypeFactory.createType(inputValue));
+        input.setType(TypeFactory.createType(inputValue , "UTF_8"));
         switch (TypeFactory.getTypeId(inputValue.get("type"))) {
           case "boolean":
               input.setDefaultValue("false");
@@ -283,7 +281,7 @@ public class TestTaskBuilder {
               output.setDisplayName(inputValue.get("display_name").textValue());
               output.setDescription(inputValue.get("description").textValue());
               // use type factory to generate the correct type
-              output.setType(TypeFactory.createType(inputValue));
+              output.setType(TypeFactory.createType(inputValue , "UTF_8"));
 
               outputs.add(output);
 
@@ -308,6 +306,4 @@ public class TestTaskBuilder {
     }
     return authors;
   }
-
 }
-

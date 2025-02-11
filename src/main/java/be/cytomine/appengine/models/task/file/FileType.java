@@ -7,7 +7,6 @@ import java.util.UUID;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import lombok.Data;
@@ -17,7 +16,9 @@ import be.cytomine.appengine.dto.inputs.task.types.file.FileTypeConstraint;
 import be.cytomine.appengine.dto.inputs.task.types.file.FileValue;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.TypeValidationException;
-import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.StorageData;
+import be.cytomine.appengine.handlers.StorageDataEntry;
+import be.cytomine.appengine.handlers.StorageDataType;
 import be.cytomine.appengine.models.task.Output;
 import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.models.task.Run;
@@ -27,8 +28,9 @@ import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.file.FilePersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 
-@Entity
+@SuppressWarnings("checkstyle:LineLength")
 @Data
+@Entity
 @EqualsAndHashCode(callSuper = true)
 public class FileType extends Type {
 
@@ -40,12 +42,13 @@ public class FileType extends Type {
 
     public void setConstraint(FileTypeConstraint constraint, JsonNode value) {
         switch (constraint) {
-        case FORMATS:
-            this.setFormats(parse(value.toString()));
-            break;
-        case MAX_FILE_SIZE:
-            this.setMaxFileSize(value.asText());
-            break;
+            case FORMATS:
+                this.setFormats(parse(value.toString()));
+                break;
+            case MAX_FILE_SIZE:
+                this.setMaxFileSize(value.asText());
+                break;
+            default:
         }
     }
 
@@ -75,7 +78,7 @@ public class FileType extends Type {
     }
 
     @Override
-    public void persistResult(Run run, Output currentOutput, String outputValue) {
+    public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         FilePersistenceRepository filePersistenceRepository = AppEngineApplicationContext.getBean(FilePersistenceRepository.class);
         FilePersistence result = filePersistenceRepository.findFilePersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
         if (result != null) {
@@ -91,13 +94,16 @@ public class FileType extends Type {
     }
 
     @Override
-    public FileData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision) {
         String parameterName = provision.get("param_name").asText();
         byte[] inputFileData = null;
         try {
             inputFileData = provision.get("value").binaryValue();
-        } catch (IOException ignored) {}
-        return new FileData(inputFileData, parameterName);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName, StorageDataType.FILE);
+        return new StorageData(storageDataEntry);
     }
 
     @Override
@@ -110,7 +116,7 @@ public class FileType extends Type {
     }
 
     @Override
-    public FileValue buildTaskRunParameterValue(String output, UUID id, String outputName) {
+    public FileValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
         FileValue fileValue = new FileValue();
         fileValue.setParameterName(outputName);
         fileValue.setTaskRunId(id);
