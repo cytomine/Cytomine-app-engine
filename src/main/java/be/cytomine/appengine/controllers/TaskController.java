@@ -27,7 +27,7 @@ import be.cytomine.appengine.exceptions.RunTaskServiceException;
 import be.cytomine.appengine.exceptions.TaskNotFoundException;
 import be.cytomine.appengine.exceptions.TaskServiceException;
 import be.cytomine.appengine.exceptions.ValidationException;
-import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.task.Task;
 import be.cytomine.appengine.services.TaskService;
 
@@ -167,11 +167,11 @@ public class TaskController {
     ) throws TaskServiceException {
         log.info("tasks/{namespace}/{version}/descriptor.yml GET");
         try {
-            FileData file = taskService.retrieveYmlDescriptor(namespace, version);
+            StorageData file = taskService.retrieveYmlDescriptor(namespace, version);
             log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            return new ResponseEntity<>(file.getFileData(), headers, HttpStatus.OK);
+            return new ResponseEntity<>(file.peek().getData(), headers, HttpStatus.OK);
         } catch (TaskNotFoundException e) {
             log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
             return new ResponseEntity<>(
@@ -188,11 +188,11 @@ public class TaskController {
     ) throws TaskServiceException {
         log.info("tasks/{namespace}/{version}/descriptor.yml GET");
         try {
-            FileData file = taskService.retrieveYmlDescriptor(id);
+            StorageData file = taskService.retrieveYmlDescriptor(id);
             log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            return new ResponseEntity<>(file.getFileData(), headers, HttpStatus.OK);
+            return new ResponseEntity<>(file.peek().getData(), headers, HttpStatus.OK);
         } catch (TaskNotFoundException e) {
             log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
             return new ResponseEntity<>(

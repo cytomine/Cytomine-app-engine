@@ -28,7 +28,7 @@ import be.cytomine.appengine.dto.inputs.task.TaskRunResponse;
 import be.cytomine.appengine.exceptions.FileStorageException;
 import be.cytomine.appengine.exceptions.ProvisioningException;
 import be.cytomine.appengine.exceptions.SchedulingException;
-import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.services.TaskProvisioningService;
 
@@ -110,39 +110,11 @@ public class TaskRunController {
         @PathVariable("run_id") String runId
     ) throws ProvisioningException, IOException, FileStorageException {
         log.info("/task-runs/{run_id}/inputs.zip GET");
-        FileData file = taskRunService.retrieveInputsZipArchive(runId);
+        StorageData file = taskRunService.retrieveInputsZipArchive(runId);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         log.info("/task-runs/{run_id}/inputs.zip GET Ended");
-        return new ResponseEntity<>(file.getFileData(), headers, HttpStatus.OK);
-    }
-
-    @GetMapping(value = "/task-runs/{run_id}/outputs.zip")
-    @ResponseStatus(code = HttpStatus.OK)
-    public ResponseEntity<?> getOutputsProvisionsArchives(
-        @PathVariable("run_id") String runId
-    ) throws ProvisioningException, IOException, FileStorageException {
-        log.info("/task-runs/{run_id}/outputs.zip GET");
-        FileData file = taskRunService.retrieveOutputsZipArchive(runId);
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-        log.info("/task-runs/{run_id}/outputs.zip GET Ended");
-        return new ResponseEntity<>(file.getFileData(), headers, HttpStatus.OK);
-    }
-
-    @PostMapping(value = "/task-runs/{run_id}/outputs.zip")
-    @ResponseStatus(code = HttpStatus.OK)
-    public ResponseEntity<?> postOutputsProvisionsArchives(
-        @PathVariable("run_id") String runId,
-        @RequestParam MultipartFile outputs
-    ) throws ProvisioningException {
-        log.info("/task-runs/{run_id}/outputs.zip POST");
-        List<TaskRunParameterValue> taskOutputs = taskRunService.postOutputsZipArchive(
-            runId,
-            outputs
-        );
-        log.info("/task-runs/{run_id}/outputs.zip POST Ended");
-        return new ResponseEntity<>(taskOutputs, HttpStatus.OK);
+        return new ResponseEntity<>(file.peek().getData(), headers, HttpStatus.OK);
     }
 
     @GetMapping(value = "/task-runs/{run_id}/inputs")
@@ -197,6 +169,34 @@ public class TaskRunController {
         );
         log.info("/task-runs/{run_id}/output/{parameter_name} Ended");
         return new ResponseEntity<>(output, HttpStatus.OK);
+    }
+
+    @GetMapping(value = "/task-runs/{run_id}/outputs.zip")
+    @ResponseStatus(code = HttpStatus.OK)
+    public ResponseEntity<?> getOutputsProvisionsArchives(
+        @PathVariable("run_id") String runId
+    ) throws ProvisioningException, IOException, FileStorageException {
+        log.info("/task-runs/{run_id}/outputs.zip GET");
+        StorageData file = taskRunService.retrieveOutputsZipArchive(runId);
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        log.info("/task-runs/{run_id}/outputs.zip GET Ended");
+        return new ResponseEntity<>(file.peek().getData(), headers, HttpStatus.OK);
+    }
+
+    @PostMapping(value = "/task-runs/{run_id}/outputs.zip")
+    @ResponseStatus(code = HttpStatus.OK)
+    public ResponseEntity<?> postOutputsProvisionsArchives(
+        @PathVariable("run_id") String runId,
+        @RequestParam MultipartFile outputs
+    ) throws ProvisioningException {
+        log.info("/task-runs/{run_id}/outputs.zip POST");
+        List<TaskRunParameterValue> taskOutputs = taskRunService.postOutputsZipArchive(
+            runId,
+            outputs
+        );
+        log.info("/task-runs/{run_id}/outputs.zip POST Ended");
+        return new ResponseEntity<>(taskOutputs, HttpStatus.OK);
     }
 
     @PostMapping(value = "/task-runs/{run_id}/state-actions")

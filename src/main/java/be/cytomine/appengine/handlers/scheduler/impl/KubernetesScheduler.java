@@ -168,9 +168,9 @@ public class KubernetesScheduler implements SchedulerHandler {
                 .withImage("cytomineuliege/alpine-task-utils:latest")
                 .withImagePullPolicy("IfNotPresent")
                 .withCommand(
-                    "/bin/sh",
-                    "-c",
-                    wait + and + zipOutputs + and + sendOutputs
+                        "/bin/sh",
+                        "-c",
+                        wait + and + zipOutputs + and + sendOutputs
                 )
 
                 .addNewVolumeMount()
@@ -237,10 +237,10 @@ public class KubernetesScheduler implements SchedulerHandler {
     public void monitor() throws SchedulingException {
         log.info("Monitor: add informer to the cluster");
         kubernetesClient
-            .pods()
-            .inNamespace("default")
-            .inform(podInformer)
-            .run();
+                .pods()
+                .inNamespace("default")
+                .inform(podInformer)
+                .run();
         log.info("Monitor: informer added");
     }
 }

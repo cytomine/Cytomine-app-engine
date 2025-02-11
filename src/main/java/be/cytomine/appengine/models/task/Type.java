@@ -22,7 +22,7 @@ import lombok.EqualsAndHashCode;
 
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.exceptions.TypeValidationException;
-import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.BaseEntity;
 
 @Entity
@@ -38,7 +38,8 @@ public class Type extends BaseEntity {
 
     private String id;  // as found in the descriptor
 
-    // used to track which constraints are defined for this type object
+    private String charset;
+
     @ElementCollection
     private List<String> constraints;
 
@@ -61,13 +62,13 @@ public class Type extends BaseEntity {
 
     public void persistProvision(JsonNode provision, UUID runId) {}
 
-    public void persistResult(Run runOptional, Output currentOutput, String outputValue) {}
+    public void persistResult(Run runOptional, Output currentOutput, StorageData outputValue) {}
 
-    public FileData mapToStorageFileData(JsonNode provision, String charset) {
+    public StorageData mapToStorageFileData(JsonNode provision) {
         return null;
     }
 
-    public Charset getStorageCharset(String charset) {
+    public Charset getStorageCharset() {
         return switch (charset.toUpperCase()) {
             case "US_ASCII" -> StandardCharsets.US_ASCII;
             case "ISO_8859_1" -> StandardCharsets.ISO_8859_1;
@@ -78,19 +79,24 @@ public class Type extends BaseEntity {
         };
     }
 
+    // Todo : rename
     public JsonNode createTypedParameterResponse(JsonNode provision, Run run) {
         return null;
     }
 
+    // Todo : rename
     public TaskRunParameterValue buildTaskRunParameterValue(
-        String trimmedOutput,
+        StorageData outputData,
         UUID id,
         String outputName
     ) {
         return null;
     }
 
-    public TaskRunParameterValue buildTaskRunParameterValue(TypePersistence typePersistence) {
+    // Todo : rename
+    public TaskRunParameterValue buildTaskRunParameterValue(
+        TypePersistence typePersistence
+    ) {
         return null;
     }
 }
