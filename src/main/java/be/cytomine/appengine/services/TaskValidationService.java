@@ -57,7 +57,11 @@ public class TaskValidationService {
     }
 
     private void checkManifestJsonExists(UploadTaskArchive task) throws ValidationException {
-        try (TarArchiveInputStream tais = new TarArchiveInputStream(new BufferedInputStream(new FileInputStream(task.getDockerImage())))) {
+        try (
+            FileInputStream fis = new FileInputStream(task.getDockerImage());
+            BufferedInputStream bis = new BufferedInputStream(fis);
+            TarArchiveInputStream tais = new TarArchiveInputStream(bis)
+        ) {
             TarArchiveEntry tarArchiveEntry;
 
             while ((tarArchiveEntry = tais.getNextTarEntry()) != null) {
@@ -68,7 +72,9 @@ public class TaskValidationService {
             }
         } catch (IOException e) {
             log.error("Failed to check for manifest.json in the Docker image", e);
-            AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_DOCKER_IMAGE_EXTRACTION_FAILED);
+            AppEngineError error = ErrorBuilder.build(
+                ErrorCode.INTERNAL_DOCKER_IMAGE_EXTRACTION_FAILED
+            );
             throw new ValidationException(error);
         }
 

@@ -77,7 +77,11 @@ public class TaskProvisioningService {
     @Value("${storage.input.charset}")
     private String charset;
 
-    public JsonNode provisionRunParameter(String runId, String name, Object value) throws ProvisioningException {
+    public JsonNode provisionRunParameter(
+        String runId,
+        String name,
+        Object value
+    ) throws ProvisioningException {
         log.info("ProvisionParameter: finding associated task run...");
         Run run = getRunIfValid(runId);
         log.info("ProvisionParameter: found");
@@ -88,10 +92,16 @@ public class TaskProvisioningService {
         if (value instanceof JsonNode) {
             try {
                 ObjectMapper mapper = new ObjectMapper();
-                genericParameterProvision = mapper.treeToValue((JsonNode) value, GenericParameterProvision.class);
+                genericParameterProvision = mapper.treeToValue(
+                    (JsonNode) value,
+                    GenericParameterProvision.class
+                );
             } catch (JsonProcessingException e) {
                 log.info("ProvisionParameter: provision is not valid");
-                AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_JSON_PROCESSING_ERROR, new ParameterError(name));
+                AppEngineError error = ErrorBuilder.build(
+                    ErrorCode.INTERNAL_JSON_PROCESSING_ERROR,
+                    new ParameterError(name)
+                );
                 throw new ProvisioningException(error);
             }
         } else if (value instanceof byte[]) {
@@ -104,7 +114,10 @@ public class TaskProvisioningService {
         try {
             validateProvisionValuesAgainstTaskType(genericParameterProvision, run);
         } catch (TypeValidationException e) {
-            AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_PARAMETER_DOES_NOT_EXIST, new ParameterError(name));
+            AppEngineError error = ErrorBuilder.build(
+                ErrorCode.INTERNAL_PARAMETER_DOES_NOT_EXIST,
+                new ParameterError(name)
+            );
             throw new ProvisioningException(error);
         }
         log.info("ProvisionParameter: provision is valid");
@@ -135,17 +148,20 @@ public class TaskProvisioningService {
     }
 
     private void changeStateToProvisioned(Run run) {
-        log.info("ProvisionParameter : Changing run state to PROVISIONED...");
+        log.info("ProvisionParameter: Changing run state to PROVISIONED...");
         run.setState(TaskRunState.PROVISIONED);
         runRepository.saveAndFlush(run);
-        log.info("ProvisionParameter : RUN PROVISIONED");
+        log.info("ProvisionParameter: RUN PROVISIONED");
     }
 
-    public List<JsonNode> provisionMultipleRunParameters(String runId, List<JsonNode> provisions) throws ProvisioningException {
-        log.info("ProvisionMultipleParameter : finding associated task run...");
+    public List<JsonNode> provisionMultipleRunParameters(
+        String runId,
+        List<JsonNode> provisions
+    ) throws ProvisioningException {
+        log.info("ProvisionMultipleParameter: finding associated task run...");
         Run run = getRunIfValid(runId);
-        log.info("ProvisionMultipleParameter : found");
-        log.info("ProvisionMultipleParameter : handling provision list");
+        log.info("ProvisionMultipleParameter: found");
+        log.info("ProvisionMultipleParameter: handling provision list");
         // prepare error list just in case
         List<AppEngineError> multipleErrors = new ArrayList<>();
         for (JsonNode provision : provisions) {
@@ -157,23 +173,39 @@ public class TaskProvisioningService {
                     GenericParameterProvision.class
                 );
                 genericParameterProvision.setRunId(runId);
-                log.info("ProvisionMultipleParameter : validating provision against parameter type definition...");
+                log.info(
+                    "ProvisionMultipleParameter: "
+                    + "validating provision against parameter type definition..."
+                );
 
                 validateProvisionValuesAgainstTaskType(genericParameterProvision, run);
             } catch (TypeValidationException e) {
-                log.info("ProvisionMultipleParameter : provision is invalid value validation failed");
-                ParameterError parameterError = new ParameterError(genericParameterProvision.getParameterName());
+                log.info(
+                    "ProvisionMultipleParameter: "
+                    + "provision is invalid value validation failed"
+                );
+                ParameterError parameterError = new ParameterError(
+                    genericParameterProvision.getParameterName()
+                );
                 AppEngineError error = ErrorBuilder.build(e.getErrorCode(), parameterError);
                 multipleErrors.add(error);
                 continue;
             } catch (JsonProcessingException e) {
-                log.info("ProvisionMultipleParameter : provision is not invalid json processing failed");
-                ParameterError parameterError = new ParameterError(genericParameterProvision.getParameterName());
-                AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_JSON_PROCESSING_ERROR, parameterError);
+                log.info(
+                    "ProvisionMultipleParameter: "
+                    + "provision is not invalid json processing failed"
+                );
+                ParameterError parameterError = new ParameterError(
+                    genericParameterProvision.getParameterName()
+                );
+                AppEngineError error = ErrorBuilder.build(
+                    ErrorCode.INTERNAL_JSON_PROCESSING_ERROR,
+                    parameterError
+                );
                 multipleErrors.add(error);
                 continue;
             }
-            log.info("ProvisionMultipleParameter : provision is valid");
+            log.info("ProvisionMultipleParameter: provision is valid");
         }
         if (!multipleErrors.isEmpty()) {
             AppEngineError error = ErrorBuilder.buildBatchError(multipleErrors);
@@ -182,7 +214,7 @@ public class TaskProvisioningService {
 
         List<JsonNode> response = new ArrayList<>();
         for (JsonNode provision : provisions) {
-            log.info("ProvisionMultipleParameter : storing provision to storage...");
+            log.info("ProvisionMultipleParameter: storing provision to storage...");
             String parameterName = provision.get("param_name").asText();
             try {
                 saveProvisionInStorage(parameterName, provision, run);
@@ -190,11 +222,12 @@ public class TaskProvisioningService {
                 multipleErrors.add(e.getError());
                 continue;
             }
-            log.info("ProvisionMultipleParameter : stored");
-            log.info("ProvisionMultipleParameter : saving provision in database...");
+            log.info("ProvisionMultipleParameter: stored");
+            log.info("ProvisionMultipleParameter: saving provision in database...");
             saveInDatabase(parameterName, provision, run);
-            log.info("ProvisionMultipleParameter : saved");
-            JsonNode responseItem = getInputParameterType(parameterName, run).createTypedParameterResponse(provision, run);
+            log.info("ProvisionMultipleParameter: saved");
+            JsonNode responseItem = getInputParameterType(parameterName, run)
+                .createTypedParameterResponse(provision, run);
             response.add(responseItem);
         }
         if (!multipleErrors.isEmpty()) {
@@ -204,7 +237,7 @@ public class TaskProvisioningService {
         if (provisions.size() == run.getTask().getInputs().size()) {
             changeStateToProvisioned(run);
         }
-        log.info("ProvisionMultipleParameter : return collection");
+        log.info("ProvisionMultipleParameter: return collection");
         return response;
     }
 
@@ -232,7 +265,11 @@ public class TaskProvisioningService {
         return inputForType.getType();
     }
 
-    private void saveProvisionInStorage(String parameterName, JsonNode provision, Run run) throws ProvisioningException {
+    private void saveProvisionInStorage(
+        String parameterName,
+        JsonNode provision,
+        Run run
+    ) throws ProvisioningException {
         Set<Input> inputs = run.getTask().getInputs();
         Input inputForType = inputs
             .stream()
@@ -276,22 +313,25 @@ public class TaskProvisioningService {
         }
     }
 
-    public StorageData retrieveInputsZipArchive(String runId) throws ProvisioningException, FileStorageException, IOException {
-        log.info("Retrieving Inputs Archive : retrieving...");
+    public StorageData retrieveInputsZipArchive(
+        String runId
+    ) throws ProvisioningException, FileStorageException, IOException {
+        log.info("Retrieving Inputs Archive: retrieving...");
         Run run = getRunIfValid(runId);
         if (run.getState().equals(TaskRunState.CREATED)) {
             AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_INVALID_TASK_RUN_STATE);
             throw new ProvisioningException(error);
         }
 
-        log.info("Retrieving Inputs Archive : fetching from storage...");
+        log.info("Retrieving Inputs Archive: fetching from storage...");
+        @SuppressWarnings("checkstyle:lineLength")
         List<TypePersistence> provisions = typePersistenceRepository.findTypePersistenceByRunIdAndParameterType(run.getId(), ParameterType.INPUT);
         if (provisions.isEmpty()) {
             AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_PROVISIONS_NOT_FOUND);
             throw new ProvisioningException(error);
         }
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        log.info("Retrieving Inputs Archive : zipping...");
+        log.info("Retrieving Inputs Archive: zipping...");
         ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream);
         for (TypePersistence provision : provisions) {
             StorageData provisionFileData = fileStorageHandler.readStorageData(
@@ -309,12 +349,14 @@ public class TaskProvisioningService {
         }
         zipOut.close();
         byteArrayOutputStream.close();
-        log.info("Retrieving Inputs Archive : zipped...");
+        log.info("Retrieving Inputs Archive: zipped...");
         return new StorageData(byteArrayOutputStream.toByteArray());
     }
 
-    public StorageData retrieveOutputsZipArchive(String runId) throws ProvisioningException, FileStorageException, IOException {
-        log.info("Retrieving Outputs Archive : retrieving...");
+    public StorageData retrieveOutputsZipArchive(
+        String runId
+    ) throws ProvisioningException, FileStorageException, IOException {
+        log.info("Retrieving Outputs Archive: retrieving...");
         Optional<Run> runOptional = runRepository.findById(UUID.fromString(runId));
         if (runOptional.isEmpty()) {
             AppEngineError error = ErrorBuilder.build(ErrorCode.RUN_NOT_FOUND);
@@ -331,7 +373,7 @@ public class TaskProvisioningService {
         @SuppressWarnings("checkstyle:LineLength")
         List<TypePersistence> results = typePersistenceRepository.findTypePersistenceByRunIdAndParameterType(runOptional.get().getId(), ParameterType.OUTPUT);
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        log.info("Retrieving Outputs Archive : zipping...");
+        log.info("Retrieving Outputs Archive: zipping...");
         ZipOutputStream zipOut = new ZipOutputStream(byteArrayOutputStream);
         for (TypePersistence result : results) {
             StorageData provisionFileData = fileStorageHandler.readStorageData(
@@ -349,12 +391,15 @@ public class TaskProvisioningService {
         }
         zipOut.close();
         byteArrayOutputStream.close();
-        log.info("Retrieving Outputs Archive : zipped...");
+        log.info("Retrieving Outputs Archive: zipped...");
         return new StorageData(byteArrayOutputStream.toByteArray());
     }
 
-    public List<TaskRunParameterValue> postOutputsZipArchive(String runId, MultipartFile outputs) throws ProvisioningException {
-        log.info("Posting Outputs Archive : posting...");
+    public List<TaskRunParameterValue> postOutputsZipArchive(
+        String runId,
+        MultipartFile outputs
+    ) throws ProvisioningException {
+        log.info("Posting Outputs Archive: posting...");
         Run run = getRunIfValid(runId);
         if (notInOneOfSchedulerManagedStates(run)) {
             AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_INVALID_TASK_RUN_STATE);
@@ -362,7 +407,7 @@ public class TaskProvisioningService {
         }
         Set<Output> runTaskOutputs = run.getTask().getOutputs();
         new ArrayList<>();
-        log.info("Posting Outputs Archive : unzipping...");
+        log.info("Posting Outputs Archive: unzipping...");
         try {
             List<TaskRunParameterValue> outputList = processOutputFiles(
                 outputs,
@@ -371,7 +416,7 @@ public class TaskProvisioningService {
             );
             run.setState(TaskRunState.FINISHED);
             runRepository.saveAndFlush(run);
-            log.info("Posting Outputs Archive : updated Run state to FINISHED");
+            log.info("Posting Outputs Archive: updated Run state to FINISHED");
             return outputList;
         } catch (IOException e) {
             throw new RuntimeException(e);
@@ -387,7 +432,7 @@ public class TaskProvisioningService {
     ) throws IOException, ProvisioningException {
         // read files from the archive
         try (ZipArchiveInputStream zais = new ZipArchiveInputStream(outputs.getInputStream())) {
-            log.info("Posting Outputs Archive : unzipped");
+            log.info("Posting Outputs Archive: unzipped");
             List<Output> remainingOutputs = new ArrayList<>(runTaskOutputs);
             List<TaskRunParameterValue> taskRunParameterValues = new ArrayList<>();
             List<StorageData> contentsOfZip = new ArrayList<>();
@@ -418,19 +463,19 @@ public class TaskProvisioningService {
                 // there's a file that do not match any output parameter
                 if (currentOutput == null) {
                     AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_UNKNOWN_OUTPUT);
-                    log.info("Posting Outputs Archive : output invalid (unknown output)");
+                    log.info("Posting Outputs Archive: output invalid (unknown output)");
                     run.setState(TaskRunState.FAILED);
                     runRepository.saveAndFlush(run);
-                    log.info("Posting Outputs Archive : updated Run state to FAILED");
+                    log.info("Posting Outputs Archive: updated Run state to FAILED");
                     throw new ProvisioningException(error);
                 }
 
                 if (!remainingOutputs.isEmpty()) {
                     AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_MISSING_OUTPUTS);
-                    log.info("Posting Outputs Archive : output invalid (missing outputs)");
+                    log.info("Posting Outputs Archive: output invalid (missing outputs)");
                     run.setState(TaskRunState.FAILED);
                     runRepository.saveAndFlush(run);
-                    log.info("Posting Outputs Archive : updated Run state to FAILED");
+                    log.info("Posting Outputs Archive: updated Run state to FAILED");
                     throw new ProvisioningException(error);
                 }
 
@@ -495,7 +540,7 @@ public class TaskProvisioningService {
                 );
             }
 
-            log.info("Posting Outputs Archive : posted");
+            log.info("Posting Outputs Archive: posted");
             return taskRunParameterValues;
         }
     }
@@ -511,25 +556,33 @@ public class TaskProvisioningService {
         };
     }
 
-    private void storeOutputInFileStorage(Run run, StorageData outputFileData, String name) throws ProvisioningException {
-        log.info("Posting Outputs Archive : storing in file storage...");
+    private void storeOutputInFileStorage(
+        Run run,
+        StorageData outputFileData,
+        String name
+    ) throws ProvisioningException {
+        log.info("Posting Outputs Archive: storing in file storage...");
         Storage outputsStorage = new Storage("task-run-outputs-" + run.getId());
         try {
             fileStorageHandler.saveStorageData(outputsStorage, outputFileData);
         } catch (FileStorageException e) {
             run.setState(TaskRunState.FAILED);
             runRepository.saveAndFlush(run);
-            log.info("Posting Outputs Archive : updated Run state to FAILED");
-            AppEngineError error = ErrorBuilder.buildParamRelatedError(ErrorCode.STORAGE_STORING_INPUT_FAILED, name, e.getMessage());
+            log.info("Posting Outputs Archive: updated Run state to FAILED");
+            AppEngineError error = ErrorBuilder.buildParamRelatedError(
+                ErrorCode.STORAGE_STORING_INPUT_FAILED,
+                name,
+                e.getMessage()
+            );
             throw new ProvisioningException(error);
         }
-        log.info("Posting Outputs Archive : stored");
+        log.info("Posting Outputs Archive: stored");
     }
 
     private void saveOutput(Run run, Output currentOutput, StorageData outputValue) {
-        log.info("Posting Outputs Archive : saving...");
+        log.info("Posting Outputs Archive: saving...");
         currentOutput.getType().persistResult(run, currentOutput, outputValue);
-        log.info("Posting Outputs Archive : saved...");
+        log.info("Posting Outputs Archive: saved...");
     }
 
     private static boolean notInOneOfSchedulerManagedStates(Run run) {
@@ -539,8 +592,10 @@ public class TaskProvisioningService {
             && !run.getState().equals(TaskRunState.QUEUING);
     }
 
-    public List<TaskRunParameterValue> retrieveRunOutputs(String runId) throws ProvisioningException {
-        log.info("Retrieving Outputs Json : retrieving...");
+    public List<TaskRunParameterValue> retrieveRunOutputs(
+        String runId
+    ) throws ProvisioningException {
+        log.info("Retrieving Outputs Json: retrieving...");
         // validate run
         Run run = getRunIfValid(runId);
         if (!run.getState().equals(TaskRunState.FINISHED)) {
@@ -548,8 +603,11 @@ public class TaskProvisioningService {
             throw new ProvisioningException(error);
         }
         // find all the results
-        List<TaskRunParameterValue> outputList = buildTaskRunParameterValues(run, ParameterType.OUTPUT);
-        log.info("Retrieving Outputs Json : retrieved");
+        List<TaskRunParameterValue> outputList = buildTaskRunParameterValues(
+            run,
+            ParameterType.OUTPUT
+        );
+        log.info("Retrieving Outputs Json: retrieved");
         return outputList;
     }
 
@@ -563,8 +621,10 @@ public class TaskProvisioningService {
         return runOptional.get();
     }
 
-    public List<TaskRunParameterValue> retrieveRunInputs(String runId) throws ProvisioningException {
-        log.info("Retrieving Inputs : retrieving...");
+    public List<TaskRunParameterValue> retrieveRunInputs(
+        String runId
+    ) throws ProvisioningException {
+        log.info("Retrieving Inputs: retrieving...");
         // validate run
         Run run = getRunIfValid(runId);
         if (run.getState().equals(TaskRunState.CREATED)) {
@@ -572,12 +632,19 @@ public class TaskProvisioningService {
             throw new ProvisioningException(error);
         }
         // find all the results
-        List<TaskRunParameterValue> inputList = buildTaskRunParameterValues(run, ParameterType.INPUT);
-        log.info("Retrieving Inputs : retrieved");
+        List<TaskRunParameterValue> inputList = buildTaskRunParameterValues(
+            run,
+            ParameterType.INPUT
+        );
+        log.info("Retrieving Inputs: retrieved");
         return inputList;
     }
 
-    public byte[] retrieveSingleRunIO(String runId, String parameterName, ParameterType type) throws ProvisioningException {
+    public byte[] retrieveSingleRunIO(
+        String runId,
+        String parameterName,
+        ParameterType type
+    ) throws ProvisioningException {
         log.info("Get IO file from storage: searching...");
 
         String io = type.equals(ParameterType.INPUT) ? "inputs" : "outputs";
@@ -631,7 +698,10 @@ public class TaskProvisioningService {
         return parameterValues;
     }
 
-    public StateAction updateRunState(String runId, State state) throws SchedulingException, ProvisioningException {
+    public StateAction updateRunState(
+        String runId,
+        State state
+    ) throws SchedulingException, ProvisioningException {
         log.info("Update State: validating Run...");
         Run run = getRunIfValid(runId);
 
@@ -663,26 +733,26 @@ public class TaskProvisioningService {
 
     @NotNull
     private StateAction run(Run run) throws ProvisioningException, SchedulingException {
-        log.info("Running Task : scheduling...");
+        log.info("Running Task: scheduling...");
         if (!run.getState().equals(TaskRunState.PROVISIONED)) {
             AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_NOT_PROVISIONED);
             throw new ProvisioningException(error);
         }
-        log.info("Running Task : valid run");
+        log.info("Running Task: valid run");
 
-        log.info("Running Task : contacting scheduler...");
+        log.info("Running Task: contacting scheduler...");
         Schedule schedule = new Schedule();
         schedule.setRun(run);
         schedulerHandler.schedule(schedule);
-        log.info("Running Task : scheduling done");
+        log.info("Running Task: scheduling done");
 
         // update the final state
         run.setState(TaskRunState.QUEUING);
         runRepository.saveAndFlush(run);
-        log.info("Running Task : updated Run state to QUEUING");
+        log.info("Running Task: updated Run state to QUEUING");
 
         StateAction action = createStateAction(run, TaskRunState.QUEUING);
-        log.info("Running Task : scheduled");
+        log.info("Running Task: scheduled");
 
         return action;
     }
@@ -725,10 +795,10 @@ public class TaskProvisioningService {
     }
 
     public TaskRunResponse retrieveRun(String runId) throws ProvisioningException {
-        log.info("Retrieving Run : retrieving...");
+        log.info("Retrieving Run: retrieving...");
         Run run = getRunIfValid(runId);
         TaskDescription description = makeTaskDescription(run.getTask());
-        log.info("Retrieving Run : retrieved");
+        log.info("Retrieving Run: retrieved");
         return new TaskRunResponse(
             UUID.fromString(runId),
             description,

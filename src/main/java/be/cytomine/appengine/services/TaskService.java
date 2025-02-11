@@ -97,33 +97,46 @@ public class TaskService {
         }
 
         try {
-            fileStorageHandler.saveStorageData(storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
+            fileStorageHandler.saveStorageData(
+                storage,
+                new StorageData(uploadTaskArchive.getDescriptorFile(),
+                "descriptor.yml")
+            );
             log.info("UploadTask: descriptor.yml is stored in object storage");
         } catch (FileStorageException e) {
             try {
-                log.info("UploadTask: failed to store descriptor.yml, attempting deleting storage...");
+                log.info("UploadTask: failed to store descriptor.yml");
+                log.info("UploadTask: attempting deleting storage...");
                 fileStorageHandler.deleteStorage(storage);
                 log.info("UploadTask: storage deleted");
             } catch (FileStorageException ex) {
-                log.error("UploadTask: file storage service is failing [" + ex.getMessage() + "]");
-                AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_STORING_TASK_DEFINITION_FAILED);
+                log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
+                AppEngineError error = ErrorBuilder.build(
+                    ErrorCode.STORAGE_STORING_TASK_DEFINITION_FAILED
+                );
                 throw new TaskServiceException(error);
             }
             return Optional.empty();
         }
 
         log.info("UploadTask: pushing task image...");
-        DockerImage image = new DockerImage(uploadTaskArchive.getDockerImage(), taskIdentifiers.getImageRegistryCompliantName());
+        DockerImage image = new DockerImage(
+            uploadTaskArchive.getDockerImage(),
+            taskIdentifiers.getImageRegistryCompliantName()
+        );
         try {
             registryHandler.pushImage(image);
         } catch (RegistryException e) {
             try {
-                log.debug("UploadTask: failed to push image to registry, attempting to delete storage...");
+                log.debug("UploadTask: failed to push image to registry");
+                log.debug("UploadTask: attempting to delete storage...");
                 fileStorageHandler.deleteStorage(storage);
                 log.info("UploadTask: storage deleted");
             } catch (FileStorageException ex) {
                 log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
-                AppEngineError error = ErrorBuilder.build(ErrorCode.REGISTRY_PUSHING_TASK_IMAGE_FAILED);
+                AppEngineError error = ErrorBuilder.build(
+                    ErrorCode.REGISTRY_PUSHING_TASK_IMAGE_FAILED
+                );
                 throw new TaskServiceException(error);
             }
         } finally {
@@ -160,7 +173,11 @@ public class TaskService {
         );
 
         if (uploadTaskArchive.getDescriptorFileAsJson().get("description") != null) {
-            task.setDescription(uploadTaskArchive.getDescriptorFileAsJson().get("description").textValue());
+            task.setDescription(uploadTaskArchive
+                .getDescriptorFileAsJson()
+                .get("description")
+                .textValue()
+            );
         }
 
         task.setAuthors(getAuthors(uploadTaskArchive));
@@ -274,7 +291,9 @@ public class TaskService {
         return authors;
     }
 
-    private void validateTaskBundle(UploadTaskArchive uploadTaskArchive) throws ValidationException {
+    private void validateTaskBundle(
+        UploadTaskArchive uploadTaskArchive
+    ) throws ValidationException {
         taskValidationService.validateDescriptorFile(uploadTaskArchive);
         taskValidationService.checkIsNotDuplicate(uploadTaskArchive);
         taskValidationService.validateImage(uploadTaskArchive);
@@ -298,7 +317,10 @@ public class TaskService {
         );
     }
 
-    public StorageData retrieveYmlDescriptor(String namespace, String version) throws TaskServiceException, TaskNotFoundException {
+    public StorageData retrieveYmlDescriptor(
+        String namespace,
+        String version
+    ) throws TaskServiceException, TaskNotFoundException {
         log.info("Storage : retrieving descriptor.yml...");
         Task task = taskRepository.findByNamespaceAndVersion(namespace, version);
         if (task == null) {
@@ -315,7 +337,9 @@ public class TaskService {
         return file;
     }
 
-    public StorageData retrieveYmlDescriptor(String id) throws TaskServiceException, TaskNotFoundException {
+    public StorageData retrieveYmlDescriptor(
+        String id
+    ) throws TaskServiceException, TaskNotFoundException {
         log.info("Storage : retrieving descriptor.yml...");
         Optional<Task> task = taskRepository.findById(UUID.fromString(id));
         if (task.isEmpty()) {
@@ -412,7 +436,10 @@ public class TaskService {
     }
 
     @Transactional
-    public TaskRun createRunForTask(String namespace, String version) throws RunTaskServiceException {
+    public TaskRun createRunForTask(
+        String namespace,
+        String version
+    ) throws RunTaskServiceException {
         log.info("tasks/{namespace}/{version}/runs: creating run...");
         // find associated task
         log.info("tasks/{namespace}/{version}/runs: retrieving associated task...");
@@ -476,7 +503,10 @@ public class TaskService {
             fileStorageHandler.createStorage(outputStorage);
             log.info("tasks/{namespace}/{version}/runs: Storage is created for task");
         } catch (FileStorageException e) {
-            log.error("tasks/{namespace}/{version}/runs: failed to create storage [{}]", e.getMessage());
+            log.error(
+                "tasks/{namespace}/{version}/runs: failed to create storage [{}]",
+                e.getMessage()
+            );
             throw new RunTaskServiceException(e);
         }
     }
