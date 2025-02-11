@@ -1,6 +1,7 @@
 package be.cytomine.appengine.services;
 
-import java.io.ByteArrayInputStream;
+import java.io.BufferedInputStream;
+import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +30,6 @@ import be.cytomine.appengine.dto.responses.errors.AppEngineError;
 import be.cytomine.appengine.dto.responses.errors.ErrorBuilder;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.dto.responses.errors.details.ParameterError;
-import be.cytomine.appengine.exceptions.BundleArchiveException;
 import be.cytomine.appengine.exceptions.ValidationException;
 import be.cytomine.appengine.models.task.Task;
 import be.cytomine.appengine.repositories.TaskRepository;
@@ -52,46 +52,32 @@ public class TaskValidationService {
         }
     }
 
-    public void validateImage(
-        UploadTaskArchive task
-    ) throws ValidationException, BundleArchiveException {
+    public void validateImage(UploadTaskArchive task) throws ValidationException {
         checkManifestJsonExists(task);
     }
 
-    private void checkManifestJsonExists(
-        UploadTaskArchive task
-    ) throws BundleArchiveException, ValidationException {
-        
-        try (TarArchiveInputStream tarInputStream = new TarArchiveInputStream(
-            new ByteArrayInputStream(task.getDockerImage())
-        )) {
+    private void checkManifestJsonExists(UploadTaskArchive task) throws ValidationException {
+        try (TarArchiveInputStream tais = new TarArchiveInputStream(new BufferedInputStream(new FileInputStream(task.getDockerImage())))) {
             TarArchiveEntry tarArchiveEntry;
 
-            boolean manifestNotFound = true;
-            while ((tarArchiveEntry = tarInputStream.getNextTarEntry()) != null) {
+            while ((tarArchiveEntry = tais.getNextTarEntry()) != null) {
                 String name = tarArchiveEntry.getName();
                 if (name.equalsIgnoreCase("manifest.json")) {
-                    manifestNotFound = false;
+                    return;
                 }
             }
-
-            if (manifestNotFound) {
-                log.info("Validation error [manifest.json does not exist]");
-                AppEngineError error = ErrorBuilder.build(
-                    ErrorCode.INTERNAL_DOCKER_IMAGE_MANIFEST_MISSING
-                );
-                throw new ValidationException(error);
-            }
         } catch (IOException e) {
-            AppEngineError error = ErrorBuilder.build(
-                ErrorCode.INTERNAL_DOCKER_IMAGE_EXTRACTION_FAILED
-            );
-            throw new BundleArchiveException(error);
+            log.error("Failed to check for manifest.json in the Docker image", e);
+            AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_DOCKER_IMAGE_EXTRACTION_FAILED);
+            throw new ValidationException(error);
         }
+
+        log.info("Validation error [manifest.json does not exist]");
+        AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_DOCKER_IMAGE_MANIFEST_MISSING);
+        throw new ValidationException(error);
     }
 
     public void validateDescriptorFile(UploadTaskArchive task) throws ValidationException {
-
         Set<ValidationMessage> errors = getDescriptorJsonSchemaV7()
             .validate(getDescriptorJsonNode(task));
         // prepare error list just in case
@@ -100,11 +86,11 @@ public class TaskValidationService {
             AppEngineError error = buildErrorFromValidationMessage(message);
             multipleErrors.add(error);
         }
+
         if (!multipleErrors.isEmpty()) {
             AppEngineError error = ErrorBuilder.buildSchemaValidationError(multipleErrors);
             throw new ValidationException(error);
         }
-
     }
 
     @NotNull
@@ -146,15 +132,12 @@ public class TaskValidationService {
     private static JsonSchema getDescriptorJsonSchemaV7() throws ValidationException {
         ClassPathResource resource = new ClassPathResource("/schemas/tasks/task.v0.json");
 
-        // Open an InputStream to the file
         JsonNode schemaJson;
-        try {
-            try (InputStream inputStream = resource.getInputStream()) {
-                String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
-                ObjectMapper mapper = new ObjectMapper();
-                try (JsonParser jsonParser = mapper.getFactory().createParser(content)) {
-                    schemaJson = jsonParser.readValueAsTree();
-                }
+        try (InputStream inputStream = resource.getInputStream()) {
+            String content = new String(inputStream.readAllBytes(), StandardCharsets.UTF_8);
+            ObjectMapper mapper = new ObjectMapper();
+            try (JsonParser jsonParser = mapper.getFactory().createParser(content)) {
+                schemaJson = jsonParser.readValueAsTree();
             }
         } catch (IOException e) {
             AppEngineError error = ErrorBuilder.build(

@@ -1,6 +1,8 @@
 package be.cytomine.appengine.handlers.registry.impl;
 
-import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 
@@ -26,29 +28,34 @@ public class DockerRegistryHandler implements RegistryHandler {
         if (authenticated) {
             RegistryClient.authenticate(registryUsername, registryPassword);
         }
-        log.info("Image Registry Handler : Docker Registry initialized");
+
+        log.info("Docker Registry Handler: initialised");
     }
 
     @Override
     public boolean checkImage(DockerImage image) throws RegistryException {
-        // TODO implement image validation by registry if exists
         return false;
     }
 
     @Override
     public void pushImage(DockerImage image) throws RegistryException {
-        log.info("Image Registry Handler : pushing image...");
-        byte[] imageTarData = image.getDockerImageData();
-        InputStream imageTarDataInputStream = new ByteArrayInputStream(imageTarData);
-        String imageNameWithRegistry = image.getImageName();
-        try {
-            RegistryClient.push(imageTarDataInputStream, imageNameWithRegistry);
+        log.info("Docker Registry Handler: pushing image...");
+
+        String imageName = image.getImageName();
+        File imageData = image.getImageData();
+
+        try (InputStream inputStream = new FileInputStream(imageData)) {
+            RegistryClient.push(inputStream, imageName);
+            log.info("Docker Registry Handler: image pushed");
+        } catch (FileNotFoundException e) {
+            log.error("Image data file not found: {}", imageData.getAbsolutePath(), e);
+            throw new RegistryException("Docker Registry Handler: image data file not found");
         } catch (IOException e) {
-            e.printStackTrace();
-            throw new RegistryException(
-                "Docker Registry Handler: failed to push image to registry"
-            );
+            log.error("Error reading image data from file: {}", imageData.getAbsolutePath(), e);
+            throw new RegistryException("Docker Registry Handler: failed to read image data");
+        } catch (Exception e) {
+            log.error("Failed to push image: {}", imageName, e);
+            throw new RegistryException("Docker Registry Handler: failed to push the image to registry");
         }
-        log.info("Image Registry Handler : image pushed");
     }
 }
