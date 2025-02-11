@@ -71,7 +71,7 @@ public class TaskProvisioningService {
 
     private final StorageHandler fileStorageHandler;
 
-    private SchedulerHandler schedulerHandler;
+    private final SchedulerHandler schedulerHandler;
 
     public JsonNode provisionRunParameter(
         JsonNode provision,
