@@ -14,7 +14,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import be.cytomine.appengine.dto.inputs.task.*;
 import be.cytomine.appengine.exceptions.*;
-import be.cytomine.appengine.handlers.FileData;
+import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.task.ParameterType;
 import be.cytomine.appengine.services.TaskProvisioningService;
 
@@ -79,24 +79,23 @@ public class TaskRunController {
     @ResponseStatus(code = HttpStatus.OK)
     public ResponseEntity<?> getInputProvisionsArchives(@PathVariable String run_id) throws ProvisioningException, IOException, FileStorageException {
         log.info("/task-runs/{run_id}/inputs.zip GET");
-        FileData file = taskRunService.retrieveInputsZipArchive(run_id);
+        StorageData file = taskRunService.retrieveInputsZipArchive(run_id);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         log.info("/task-runs/{run_id}/inputs.zip GET Ended");
-        return new ResponseEntity<>(file.getFileData(), headers, HttpStatus.OK);
+        return new ResponseEntity<>(file.peek().getData(), headers, HttpStatus.OK);
     }
 
     @GetMapping(value = "/task-runs/{run_id}/outputs.zip")
     @ResponseStatus(code = HttpStatus.OK)
     public ResponseEntity<?> getOutputsProvisionsArchives(@PathVariable String run_id) throws ProvisioningException, IOException, FileStorageException {
         log.info("/task-runs/{run_id}/outputs.zip GET");
-        FileData file = taskRunService.retrieveOutputsZipArchive(run_id);
+        StorageData file = taskRunService.retrieveOutputsZipArchive(run_id);
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
         log.info("/task-runs/{run_id}/outputs.zip GET Ended");
-        return new ResponseEntity<>(file.getFileData(), headers, HttpStatus.OK);
+        return new ResponseEntity<>(file.peek().getData(), headers, HttpStatus.OK);
     }
-
 
     @GetMapping(value = "/task-runs/{run_id}/inputs")
     @ResponseStatus(code = HttpStatus.OK)
@@ -142,7 +141,7 @@ public class TaskRunController {
 
     @PostMapping(value = "/task-runs/{run_id}/outputs.zip")
     @ResponseStatus(code = HttpStatus.OK)
-    public ResponseEntity<?> getInputProvisionsArchives(@PathVariable String run_id, @RequestParam("outputs") MultipartFile outputs) throws ProvisioningException {
+    public ResponseEntity<?> postOutputsProvisionsArchives(@PathVariable String run_id, @RequestParam("outputs") MultipartFile outputs) throws ProvisioningException {
         log.info("/task-runs/{run_id}/outputs.zip POST");
         List<TaskRunParameterValue> taskOutputs = taskRunService.postOutputsZipArchive(run_id, outputs);
         log.info("/task-runs/{run_id}/outputs.zip POST Ended");
