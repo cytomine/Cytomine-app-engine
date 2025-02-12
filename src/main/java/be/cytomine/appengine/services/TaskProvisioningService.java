@@ -322,7 +322,10 @@ public class TaskProvisioningService {
     ) throws ProvisioningException, FileStorageException, IOException {
         log.info("Retrieving IO Archive: retrieving...");
         Run run = getRunIfValid(runId);
-        if (run.getState().equals(TaskRunState.CREATED)) {
+        TaskRunState state = run.getState();
+
+        if ((type == ParameterType.INPUT && !state.equals(TaskRunState.PROVISIONED))
+            || (type == ParameterType.OUTPUT && !state.equals(TaskRunState.FINISHED))) {
             AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_INVALID_TASK_RUN_STATE);
             throw new ProvisioningException(error);
         }

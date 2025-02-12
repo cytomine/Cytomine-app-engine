@@ -21,7 +21,7 @@ public class ErrorDefinitions {
         codes.put(ErrorCode.INTERNAL_INVALID_TASK_RUN_STATE, new MessageCode("APPE-internal-task-run-state-error", "run is in invalid state"));
         codes.put(ErrorCode.INTERNAL_MAX_UPLOAD_SIZE_EXCEEDED, new MessageCode("APPE-internal-bundle-validation-error", "maximum upload size for bundle exceeded"));
         codes.put(ErrorCode.INTERNAL_MISSING_OUTPUTS, new MessageCode("APPE-internal-task-run-missing-outputs", "some outputs are missing in the archive"));
-        codes.put(ErrorCode.INTERNAL_NOT_PROVISIONED, new MessageCode("APPE-internal-task-run-state-error", "not provisioned"));
+        codes.put(ErrorCode.INTERNAL_NOT_PROVISIONED, new MessageCode("APPE-internal-task-run-provisions-not-found", "not provisioned"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_DOES_NOT_EXIST, new MessageCode("APPE-internal-parameter-not-found", "parameter not found"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_GEOJSON_PROCESSING_ERROR, new MessageCode("APPE-internal-request-validation-error", "failed to parse the given GeoJSON object"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_GEOJSON_SUBTYPE_ERROR, new MessageCode("APPE-internal-request-validation-error", "unsupported GeoJSON subtype"));
