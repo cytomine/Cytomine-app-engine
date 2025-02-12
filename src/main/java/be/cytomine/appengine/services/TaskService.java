@@ -102,7 +102,7 @@ public class TaskService {
 
         try {
             fileStorageHandler.saveStorageData(
-            storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
+                storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
             log.info("UploadTask: descriptor.yml is stored in object storage");
         } catch (FileStorageException e) {
             try {
@@ -112,7 +112,8 @@ public class TaskService {
                 log.info("UploadTask: storage deleted");
             } catch (FileStorageException ex) {
                 log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
-                AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_STORING_TASK_DEFINITION_FAILED);
+                AppEngineError error = ErrorBuilder
+                    .build(ErrorCode.STORAGE_STORING_TASK_DEFINITION_FAILED);
                 throw new TaskServiceException(error);
             }
             return Optional.empty();
@@ -121,7 +122,8 @@ public class TaskService {
         log.info("UploadTask: pushing task image...");
         DockerImage image =
             new DockerImage(
-                uploadTaskArchive.getDockerImage(), taskIdentifiers.getImageRegistryCompliantName());
+                uploadTaskArchive.getDockerImage(),
+                taskIdentifiers.getImageRegistryCompliantName());
         try {
             registryHandler.pushImage(image);
         } catch (RegistryException e) {
@@ -153,10 +155,10 @@ public class TaskService {
         task.setVersion(uploadTaskArchive.getDescriptorFileAsJson().get("version").textValue());
         task.setInputFolder(
             uploadTaskArchive
-                .getDescriptorFileAsJson()
-                .get("configuration")
-                .get("input_folder")
-                .textValue());
+            .getDescriptorFileAsJson()
+            .get("configuration")
+            .get("input_folder")
+            .textValue());
         task.setOutputFolder(
             uploadTaskArchive
                 .getDescriptorFileAsJson()
@@ -199,104 +201,104 @@ public class TaskService {
     }
 
     private Set<Input> getInputs(UploadTaskArchive uploadTaskArchive) {
-    log.info("UploadTask: getting inputs...");
-    Set<Input> inputs = new HashSet<>();
-    JsonNode inputsNode = uploadTaskArchive.getDescriptorFileAsJson().get("inputs");
-    if (inputsNode.isObject()) {
-      Iterator<String> fieldNames = inputsNode.fieldNames();
-      while (fieldNames.hasNext()) {
-        String inputKey = fieldNames.next();
-        JsonNode inputValue = inputsNode.get(inputKey);
+        log.info("UploadTask: getting inputs...");
+        Set<Input> inputs = new HashSet<>();
+        JsonNode inputsNode = uploadTaskArchive.getDescriptorFileAsJson().get("inputs");
+        if (inputsNode.isObject()) {
+            Iterator<String> fieldNames = inputsNode.fieldNames();
+            while (fieldNames.hasNext()) {
+            String inputKey = fieldNames.next();
+            JsonNode inputValue = inputsNode.get(inputKey);
 
-        Input input = new Input();
-        input.setName(inputKey);
-        input.setDisplayName(inputValue.get("display_name").textValue());
-        input.setDescription(inputValue.get("description").textValue());
-        // use type factory to generate the correct type
-        input.setType(TypeFactory.createType(inputValue, charset));
+            Input input = new Input();
+            input.setName(inputKey);
+            input.setDisplayName(inputValue.get("display_name").textValue());
+            input.setDescription(inputValue.get("description").textValue());
+            // use type factory to generate the correct type
+            input.setType(TypeFactory.createType(inputValue, charset));
 
-        // Set default value
-        JsonNode defaultNode = inputValue.get("default");
-        if (defaultNode != null) {
-          switch (defaultNode.getNodeType()) {
-            case STRING:
-              input.setDefaultValue(defaultNode.textValue());
-              break;
-            case BOOLEAN:
-              input.setDefaultValue(Boolean.toString(defaultNode.booleanValue()));
-              break;
-            case NUMBER:
-              input.setDefaultValue(defaultNode.numberValue().toString());
-              break;
-            default:
-              input.setDefaultValue(defaultNode.toString());
-              break;
-          }
+            // Set default value
+            JsonNode defaultNode = inputValue.get("default");
+            if (defaultNode != null) {
+                switch (defaultNode.getNodeType()) {
+                    case STRING:
+                    input.setDefaultValue(defaultNode.textValue());
+                    break;
+                    case BOOLEAN:
+                    input.setDefaultValue(Boolean.toString(defaultNode.booleanValue()));
+                    break;
+                    case NUMBER:
+                    input.setDefaultValue(defaultNode.numberValue().toString());
+                    break;
+                    default:
+                    input.setDefaultValue(defaultNode.toString());
+                    break;
+                }
+            }
+
+            inputs.add(input);
+            }
         }
-
-        inputs.add(input);
-      }
+        log.info("UploadTask: successful inputs ");
+        return inputs;
     }
-    log.info("UploadTask: successful inputs ");
-    return inputs;
-  }
 
     private Set<Output> getOutputs(UploadTaskArchive uploadTaskArchive, Set<Input> inputs) {
-    log.info("UploadTask: getting outputs...");
+        log.info("UploadTask: getting outputs...");
 
-    JsonNode outputsNode = uploadTaskArchive.getDescriptorFileAsJson().get("outputs");
-    if (!outputsNode.isObject()) {
-      return new HashSet<>();
+        JsonNode outputsNode = uploadTaskArchive.getDescriptorFileAsJson().get("outputs");
+        if (!outputsNode.isObject()) {
+            return new HashSet<>();
+        }
+
+        Set<Output> outputs = new HashSet<>();
+        Iterator<String> fieldNames = outputsNode.fieldNames();
+        while (fieldNames.hasNext()) {
+            String outputKey = fieldNames.next();
+            JsonNode inputValue = outputsNode.get(outputKey);
+
+            Output output = new Output();
+            output.setName(outputKey);
+            output.setDisplayName(inputValue.get("display_name").textValue());
+            output.setDescription(inputValue.get("description").textValue());
+            // use type factory to generate the correct type
+            output.setType(TypeFactory.createType(inputValue, charset));
+
+            JsonNode dependencies = inputValue.get("dependencies");
+            if (dependencies != null && dependencies.isObject()) {
+                JsonNode derivedFrom = dependencies.get("derived_from");
+                String inputName = derivedFrom.textValue().substring("inputs/".length());
+                inputs.stream()
+                .filter(input -> input.getName().equals(inputName))
+                .findFirst()
+                .ifPresent(output::setDerivedFrom);
+            }
+
+            outputs.add(output);
+        }
+
+        log.info("UploadTask: successful outputs ");
+        return outputs;
     }
-
-    Set<Output> outputs = new HashSet<>();
-    Iterator<String> fieldNames = outputsNode.fieldNames();
-    while (fieldNames.hasNext()) {
-      String outputKey = fieldNames.next();
-      JsonNode inputValue = outputsNode.get(outputKey);
-
-      Output output = new Output();
-      output.setName(outputKey);
-      output.setDisplayName(inputValue.get("display_name").textValue());
-      output.setDescription(inputValue.get("description").textValue());
-      // use type factory to generate the correct type
-      output.setType(TypeFactory.createType(inputValue, charset));
-
-      JsonNode dependencies = inputValue.get("dependencies");
-      if (dependencies != null && dependencies.isObject()) {
-        JsonNode derivedFrom = dependencies.get("derived_from");
-        String inputName = derivedFrom.textValue().substring("inputs/".length());
-        inputs.stream()
-            .filter(input -> input.getName().equals(inputName))
-            .findFirst()
-            .ifPresent(output::setDerivedFrom);
-      }
-
-      outputs.add(output);
-    }
-
-    log.info("UploadTask: successful outputs ");
-    return outputs;
-  }
 
     private Set<Author> getAuthors(UploadTaskArchive uploadTaskArchive) {
-    log.info("UploadTask: getting authors...");
-    Set<Author> authors = new HashSet<>();
-    JsonNode authorNode = uploadTaskArchive.getDescriptorFileAsJson().get("authors");
-    if (authorNode.isArray()) {
-      for (JsonNode author : authorNode) {
-        Author a = new Author();
-        a.setFirstName(author.get("first_name").textValue());
-        a.setLastName(author.get("last_name").textValue());
-        a.setOrganization(author.get("organization").textValue());
-        a.setEmail(author.get("email").textValue());
-        a.setContact(author.get("is_contact").asBoolean());
-        authors.add(a);
-      }
+        log.info("UploadTask: getting authors...");
+        Set<Author> authors = new HashSet<>();
+        JsonNode authorNode = uploadTaskArchive.getDescriptorFileAsJson().get("authors");
+        if (authorNode.isArray()) {
+            for (JsonNode author : authorNode) {
+                Author a = new Author();
+                a.setFirstName(author.get("first_name").textValue());
+                a.setLastName(author.get("last_name").textValue());
+                a.setOrganization(author.get("organization").textValue());
+                a.setEmail(author.get("email").textValue());
+                a.setContact(author.get("is_contact").asBoolean());
+                authors.add(a);
+            }
+        }
+        log.info("UploadTask: successful authors ");
+        return authors;
     }
-    log.info("UploadTask: successful authors ");
-    return authors;
-  }
 
     private void validateTaskBundle(UploadTaskArchive uploadTaskArchive) throws ValidationException {
     taskValidationService.validateDescriptorFile(uploadTaskArchive);
