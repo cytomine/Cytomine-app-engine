@@ -43,6 +43,7 @@ public class ErrorDefinitions {
         codes.put(ErrorCode.INTERNAL_PARAMETER_UNSUPPORTED_GEOMETRY_SUBTYPE, new MessageCode("APPE-internal-request-validation-error", "unsupported geometry subtype"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_UNSUPPORTED_GEOMETRY_TYPE, new MessageCode("APPE-internal-request-validation-error", "unsupported geometry type"));
         codes.put(ErrorCode.INTERNAL_PARAMETER_VALIDATION_ERROR, new MessageCode("APPE-internal-request-validation-error", "value does not match defined constraint."));
+        codes.put(ErrorCode.INTERNAL_PROVISIONS_NOT_FOUND, new MessageCode("APPE-internal-task-run-provisions-not-found", "provisions not found"));
         codes.put(ErrorCode.INTERNAL_SCHEMA_VALIDATION_ERROR, new MessageCode("APPE-internal-bundle-schema-validation-error", "schema validation failed for descriptor.yml"));
         codes.put(ErrorCode.INTERNAL_SERVER_ERROR, new MessageCode("APPE-internal-server-error", "Server error."));
         codes.put(ErrorCode.INTERNAL_UNKNOWN_BUNDLE_ARCHIVE_FORAMT, new MessageCode("APPE-internal-bundle-validation-error", "unknown task bundle archive format"));
