@@ -4,14 +4,12 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.nio.file.StandardOpenOption;
 import java.util.List;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.InputStreamResource;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -124,12 +122,20 @@ public class TaskRunController {
         @PathVariable("run_id") String runId
     ) throws ProvisioningException, IOException, FileStorageException {
         log.info("/task-runs/{run_id}/inputs.zip GET");
-        StorageData file = taskRunService.retrieveIOZipArchive(runId, ParameterType.INPUT);
+        StorageData data = taskRunService.retrieveIOZipArchive(runId, ParameterType.INPUT);
+        File file = data.peek().getData();
+
         HttpHeaders headers = new HttpHeaders();
+        headers.add(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + file.getName() + "\""
+        );
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
         log.info("/task-runs/{run_id}/inputs.zip GET Ended");
-        return new ResponseEntity<>(file.peek().getData(), headers, HttpStatus.OK);
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(new FileSystemResource(file));
     }
 
     @GetMapping(value = "/task-runs/{run_id}/inputs")
@@ -156,28 +162,18 @@ public class TaskRunController {
             ParameterType.INPUT
         );
 
-        try {
-            InputStreamResource resource = new InputStreamResource(Files.newInputStream(
-                Paths.get(input.getAbsolutePath()),
-                StandardOpenOption.READ
-            ));
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + input.getName() + "\""
+        );
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(
-                HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + input.getName() + "\""
-            );
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        log.info("/task-runs/{run_id}/input/{parameter_name} Ended");
 
-            log.info("/task-runs/{run_id}/input/{parameter_name} Ended");
-
-            return ResponseEntity.ok()
-                .headers(headers)
-                .body(resource);
-        } catch (IOException e) {
-            log.error("Failed to read file: {}", e.getMessage());
-            throw new ProvisioningException("Failed to read file " + input.getAbsolutePath());
-        }
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(new FileSystemResource(input));
     }
 
     @GetMapping(value = "/task-runs/{run_id}/outputs")
@@ -204,28 +200,18 @@ public class TaskRunController {
             ParameterType.OUTPUT
         );
 
-        try {
-            InputStreamResource resource = new InputStreamResource(Files.newInputStream(
-                Paths.get(output.getAbsolutePath()),
-                StandardOpenOption.READ
-            ));
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + output.getName() + "\""
+        );
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(
-                HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + output.getName() + "\""
-            );
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        log.info("/task-runs/{run_id}/output/{parameter_name} Ended");
 
-            log.info("/task-runs/{run_id}/output/{parameter_name} Ended");
-
-            return ResponseEntity.ok()
-                .headers(headers)
-                .body(resource);
-        } catch (IOException e) {
-            log.error("Failed to read file: {}", e.getMessage());
-            throw new ProvisioningException("Failed to read file " + output.getAbsolutePath());
-        }
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(new FileSystemResource(output));
     }
 
     @GetMapping(value = "/task-runs/{run_id}/outputs.zip")
@@ -234,11 +220,20 @@ public class TaskRunController {
         @PathVariable("run_id") String runId
     ) throws ProvisioningException, IOException, FileStorageException {
         log.info("/task-runs/{run_id}/outputs.zip GET");
-        StorageData file = taskRunService.retrieveIOZipArchive(runId, ParameterType.OUTPUT);
+        StorageData data = taskRunService.retrieveIOZipArchive(runId, ParameterType.OUTPUT);
+        File file = data.peek().getData();
+
         HttpHeaders headers = new HttpHeaders();
+        headers.add(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + file.getName() + "\""
+        );
         headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+
         log.info("/task-runs/{run_id}/outputs.zip GET Ended");
-        return new ResponseEntity<>(file.peek().getData(), headers, HttpStatus.OK);
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(new FileSystemResource(file));
     }
 
     @PostMapping(value = "/task-runs/{run_id}/outputs.zip")

@@ -166,62 +166,44 @@ public class TaskController {
     public ResponseEntity<?> findDescriptorOfTaskByNamespaceAndVersion(
         @PathVariable String namespace,
         @PathVariable String version
-    ) throws TaskServiceException {
+    ) throws TaskServiceException, TaskNotFoundException {
         log.info("tasks/{namespace}/{version}/descriptor.yml GET");
-        try {
-            StorageData data = taskService.retrieveYmlDescriptor(namespace, version);
-            File file = data.peek().getData();
-            FileSystemResource resource = new FileSystemResource(file);
+        StorageData data = taskService.retrieveYmlDescriptor(namespace, version);
+        File file = data.peek().getData();
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(
-                HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + file.getName() + "\""
-            );
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + file.getName() + "\""
+        );
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
 
-            return ResponseEntity.ok()
-                .headers(headers)
-                .body(resource);
-        } catch (TaskNotFoundException e) {
-            log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
-            return new ResponseEntity<>(
-                ErrorBuilder.build(ErrorCode.INTERNAL_TASK_NOT_FOUND),
-                HttpStatus.NOT_FOUND
-            );
-        }
+        log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(new FileSystemResource(file));
     }
 
     @GetMapping(value = "tasks/{id}/descriptor.yml")
     @ResponseStatus(code = HttpStatus.OK)
     public ResponseEntity<?> findDescriptorOfTaskById(
         @PathVariable String id
-    ) throws TaskServiceException {
+    ) throws TaskServiceException, TaskNotFoundException {
         log.info("tasks/{id}/descriptor.yml GET");
-        try {
-            StorageData data = taskService.retrieveYmlDescriptor(id);
-            File file = data.peek().getData();
-            FileSystemResource resource = new FileSystemResource(file);
+        StorageData data = taskService.retrieveYmlDescriptor(id);
+        File file = data.peek().getData();
 
-            HttpHeaders headers = new HttpHeaders();
-            headers.add(
-                HttpHeaders.CONTENT_DISPOSITION,
-                "attachment; filename=\"" + file.getName() + "\""
-            );
-            headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            log.info("tasks/{id}/descriptor.yml GET Ended");
+        HttpHeaders headers = new HttpHeaders();
+        headers.add(
+            HttpHeaders.CONTENT_DISPOSITION,
+            "attachment; filename=\"" + file.getName() + "\""
+        );
+        headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
+        log.info("tasks/{id}/descriptor.yml GET Ended");
 
-            return ResponseEntity.ok()
-                .headers(headers)
-                .body(resource);
-        } catch (TaskNotFoundException e) {
-            log.info("tasks/{id}/descriptor.yml GET Ended");
-            return new ResponseEntity<>(
-                ErrorBuilder.build(ErrorCode.INTERNAL_TASK_NOT_FOUND),
-                HttpStatus.NOT_FOUND
-            );
-        }
+        return ResponseEntity.ok()
+            .headers(headers)
+            .body(new FileSystemResource(file));
     }
 
     @PostMapping(value = "tasks/{namespace}/{version}/runs")
