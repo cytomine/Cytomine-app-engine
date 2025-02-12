@@ -493,9 +493,9 @@ public class TaskService {
 
   @Transactional
   public TaskRun createRunForTask(String taskId) throws RunTaskServiceException {
-    logger.info("tasks/{id}/runs : creating run...");
+      log.info("tasks/{id}/runs : creating run...");
     // find associated task
-    logger.info("tasks/{namespace}/{version}/runs : retrieving associated task...");
+      log.info("tasks/{namespace}/{version}/runs : retrieving associated task...");
     Optional<Task> task = taskRepository.findById(UUID.fromString(taskId));
     // update task to have a new task run
     UUID taskRunID = UUID.randomUUID();
@@ -506,14 +506,14 @@ public class TaskService {
     if (task.get().getInputs().isEmpty()) {
       throw new RunTaskServiceException("task {" + taskId + "} has no inputs");
     }
-    logger.info("tasks/{namespace}/{version}/runs : retrieved task...");
+      log.info("tasks/{namespace}/{version}/runs : retrieved task...");
     Run run = new Run(taskRunID, TaskRunState.CREATED, task.get(), LocalDateTime.now());
     runRepository.saveAndFlush(run);
     // create a storage for the inputs and outputs
     createRunStorages(taskRunID);
     // build response dto
-    logger.info("tasks/{id}/runs : run created...");
-    return new TaskRun(makeTaskDescription(task.get()), taskRunID, TaskRunState.CREATED);
+      log.info("tasks/{id}/runs : run created...");
+    return new TaskRun(taskRunID, makeTaskDescription(task.get()), TaskRunState.CREATED);
   }
 
     private void createRunStorages(UUID taskRunID) throws RunTaskServiceException {
