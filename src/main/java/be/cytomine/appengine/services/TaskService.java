@@ -99,8 +99,7 @@ public class TaskService {
         try {
             fileStorageHandler.saveStorageData(
                 storage,
-                new StorageData(uploadTaskArchive.getDescriptorFile(),
-                "descriptor.yml")
+                new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml")
             );
             log.info("UploadTask: descriptor.yml is stored in object storage");
         } catch (FileStorageException e) {
