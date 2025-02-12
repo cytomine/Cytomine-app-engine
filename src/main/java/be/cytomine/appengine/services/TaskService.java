@@ -1,12 +1,13 @@
 package be.cytomine.appengine.services;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.Optional;
-import java.util.Set;
+import java.util.ArrayList;
 import java.util.UUID;
 
 import com.fasterxml.jackson.databind.JsonNode;
@@ -51,15 +52,7 @@ import be.cytomine.appengine.repositories.RunRepository;
 import be.cytomine.appengine.repositories.TaskRepository;
 import be.cytomine.appengine.states.TaskRunState;
 import be.cytomine.appengine.utils.ArchiveUtils;
-import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.transaction.Transactional;
-import java.time.LocalDateTime;
-import java.util.*;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
+
 
 @Slf4j
 @RequiredArgsConstructor
