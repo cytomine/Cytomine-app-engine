@@ -55,7 +55,7 @@ public class Task extends BaseEntity {
     private int gpus;
     private String ram;
 
-    @OneToMany(cascade = CascadeType.ALL , fetch = FetchType.LAZY)
+    @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.LAZY)
     private Set<Author> authors;
 
     @OneToMany(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
