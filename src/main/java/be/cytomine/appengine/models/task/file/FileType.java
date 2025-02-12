@@ -54,7 +54,7 @@ public class FileType extends Type {
 
     @Override
     public void validate(Object valueObject) throws TypeValidationException {
-        if (!(valueObject instanceof byte[])) {
+        if (!(valueObject instanceof File)) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_TYPE_ERROR);
         }
     }
