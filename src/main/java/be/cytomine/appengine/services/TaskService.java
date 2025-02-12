@@ -81,122 +81,122 @@ public class TaskService {
     public Optional<TaskDescription> uploadTask(MultipartFile taskArchive)
         throws BundleArchiveException, TaskServiceException, ValidationException {
 
-            log.info("UploadTask: building archive...");
-            UploadTaskArchive uploadTaskArchive = archiveUtils.readArchive(taskArchive);
-            log.info("UploadTask: Archive is built");
-            validateTaskBundle(uploadTaskArchive);
-            log.info("UploadTask: Archive validated");
+        log.info("UploadTask: building archive...");
+        UploadTaskArchive uploadTaskArchive = archiveUtils.readArchive(taskArchive);
+        log.info("UploadTask: Archive is built");
+        validateTaskBundle(uploadTaskArchive);
+        log.info("UploadTask: Archive validated");
 
-            TaskIdentifiers taskIdentifiers = generateTaskIdentifiers(uploadTaskArchive);
-            log.info("UploadTask: Task identifiers generated {}", taskIdentifiers);
+        TaskIdentifiers taskIdentifiers = generateTaskIdentifiers(uploadTaskArchive);
+        log.info("UploadTask: Task identifiers generated {}", taskIdentifiers);
 
-            Storage storage = new Storage(taskIdentifiers.getStorageIdentifier());
+        Storage storage = new Storage(taskIdentifiers.getStorageIdentifier());
+        try {
+            fileStorageHandler.createStorage(storage);
+            log.info("UploadTask: Storage is created for task");
+        } catch (FileStorageException e) {
+            log.error("UploadTask: failed to create storage [{}]", e.getMessage());
+            AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_CREATING_STORAGE_FAILED);
+            throw new TaskServiceException(error);
+        }
+
+        try {
+            fileStorageHandler.saveStorageData(
+            storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
+            log.info("UploadTask: descriptor.yml is stored in object storage");
+        } catch (FileStorageException e) {
             try {
-                fileStorageHandler.createStorage(storage);
-                log.info("UploadTask: Storage is created for task");
-            } catch (FileStorageException e) {
-                log.error("UploadTask: failed to create storage [{}]", e.getMessage());
-                AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_CREATING_STORAGE_FAILED);
+                log.info("UploadTask: failed to store descriptor.yml");
+                log.info("UploadTask: attempting deleting storage...");
+                fileStorageHandler.deleteStorage(storage);
+                log.info("UploadTask: storage deleted");
+            } catch (FileStorageException ex) {
+                log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
+                AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_STORING_TASK_DEFINITION_FAILED);
                 throw new TaskServiceException(error);
             }
+            return Optional.empty();
+        }
 
-            try {
-                fileStorageHandler.saveStorageData(
-                storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
-                log.info("UploadTask: descriptor.yml is stored in object storage");
-            } catch (FileStorageException e) {
-                try {
-                    log.info("UploadTask: failed to store descriptor.yml");
-                    log.info("UploadTask: attempting deleting storage...");
-                    fileStorageHandler.deleteStorage(storage);
-                    log.info("UploadTask: storage deleted");
-                } catch (FileStorageException ex) {
-                    log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
-                    AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_STORING_TASK_DEFINITION_FAILED);
-                    throw new TaskServiceException(error);
-                }
-                return Optional.empty();
-            }
-
-            log.info("UploadTask: pushing task image...");
-            DockerImage image =
-                new DockerImage(
-            uploadTaskArchive.getDockerImage(), taskIdentifiers.getImageRegistryCompliantName());
+        log.info("UploadTask: pushing task image...");
+        DockerImage image =
+            new DockerImage(
+                uploadTaskArchive.getDockerImage(), taskIdentifiers.getImageRegistryCompliantName());
         try {
             registryHandler.pushImage(image);
         } catch (RegistryException e) {
-        try {
-            log.debug("UploadTask: failed to push image to registry");
-            log.debug("UploadTask: attempting to delete storage...");
-            fileStorageHandler.deleteStorage(storage);
-            log.info("UploadTask: storage deleted");
-        } catch (FileStorageException ex) {
-            log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
-            AppEngineError error = ErrorBuilder.build(ErrorCode.REGISTRY_PUSHING_TASK_IMAGE_FAILED);
-            throw new TaskServiceException(error);
-        }
+            try {
+                log.debug("UploadTask: failed to push image to registry");
+                log.debug("UploadTask: attempting to delete storage...");
+                fileStorageHandler.deleteStorage(storage);
+                log.info("UploadTask: storage deleted");
+            } catch (FileStorageException ex) {
+                log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
+                AppEngineError error = ErrorBuilder.build(ErrorCode.REGISTRY_PUSHING_TASK_IMAGE_FAILED);
+                throw new TaskServiceException(error);
+            }
         } finally {
             uploadTaskArchive.getDockerImage().delete();
         }
         log.info("UploadTask: image pushed to registry");
 
-    // save task info
-    Task task = new Task();
-    task.setIdentifier(taskIdentifiers.getLocalTaskIdentifier());
-    task.setStorageReference(taskIdentifiers.getStorageIdentifier());
-    task.setImageName(taskIdentifiers.getImageRegistryCompliantName());
-    task.setName(uploadTaskArchive.getDescriptorFileAsJson().get("name").textValue());
-    task.setNameShort(uploadTaskArchive.getDescriptorFileAsJson().get("name_short").textValue());
-    task.setDescriptorFile(
-        uploadTaskArchive.getDescriptorFileAsJson().get("namespace").textValue());
-    task.setNamespace(uploadTaskArchive.getDescriptorFileAsJson().get("namespace").textValue());
-    task.setVersion(uploadTaskArchive.getDescriptorFileAsJson().get("version").textValue());
-    task.setInputFolder(
-        uploadTaskArchive
-            .getDescriptorFileAsJson()
-            .get("configuration")
-            .get("input_folder")
-            .textValue());
-    task.setOutputFolder(
-        uploadTaskArchive
-            .getDescriptorFileAsJson()
-            .get("configuration")
-            .get("output_folder")
-            .textValue());
+        // save task info
+        Task task = new Task();
+        task.setIdentifier(taskIdentifiers.getLocalTaskIdentifier());
+        task.setStorageReference(taskIdentifiers.getStorageIdentifier());
+        task.setImageName(taskIdentifiers.getImageRegistryCompliantName());
+        task.setName(uploadTaskArchive.getDescriptorFileAsJson().get("name").textValue());
+        task.setNameShort(uploadTaskArchive.getDescriptorFileAsJson().get("name_short").textValue());
+        task.setDescriptorFile(
+            uploadTaskArchive.getDescriptorFileAsJson().get("namespace").textValue());
+        task.setNamespace(uploadTaskArchive.getDescriptorFileAsJson().get("namespace").textValue());
+        task.setVersion(uploadTaskArchive.getDescriptorFileAsJson().get("version").textValue());
+        task.setInputFolder(
+            uploadTaskArchive
+                .getDescriptorFileAsJson()
+                .get("configuration")
+                .get("input_folder")
+                .textValue());
+        task.setOutputFolder(
+            uploadTaskArchive
+                .getDescriptorFileAsJson()
+                .get("configuration")
+                .get("output_folder")
+                .textValue());
 
-    // resources
-    JsonNode resources =
-        uploadTaskArchive.getDescriptorFileAsJson().get("configuration").get("resources");
-    if (Objects.nonNull(resources) && Objects.nonNull(resources.get("ram"))) {
-      task.setRam(resources.get("ram").textValue());
-    } else {
-      task.setRam(defaultRam);
+        // resources
+        JsonNode resources =
+            uploadTaskArchive.getDescriptorFileAsJson().get("configuration").get("resources");
+        if (Objects.nonNull(resources) && Objects.nonNull(resources.get("ram"))) {
+            task.setRam(resources.get("ram").textValue());
+        } else {
+            task.setRam(defaultRam);
+        }
+
+        if (Objects.nonNull(resources) && Objects.nonNull(resources.get("cpus"))) {
+            task.setCpus(resources.get("cpus").intValue());
+        } else {
+            task.setCpus(defaultCpus);
+        }
+
+        if (Objects.nonNull(resources) && Objects.nonNull(resources.get("gpus"))) {
+            task.setGpus(resources.get("gpus").intValue());
+        }
+
+        if (Objects.nonNull(uploadTaskArchive.getDescriptorFileAsJson().get("description")))
+            task.setDescription(
+              uploadTaskArchive.getDescriptorFileAsJson().get("description").textValue());
+
+        task.setAuthors(getAuthors(uploadTaskArchive));
+        task.setInputs(getInputs(uploadTaskArchive));
+        task.setOutputs(getOutputs(uploadTaskArchive, task.getInputs()));
+
+        log.info("UploadTask: saving task...");
+        taskRepository.save(task);
+        log.info("UploadTask: task saved");
+
+        return Optional.of(makeTaskDescription(task));
     }
-
-    if (Objects.nonNull(resources) && Objects.nonNull(resources.get("cpus"))) {
-      task.setCpus(resources.get("cpus").intValue());
-    } else {
-      task.setCpus(defaultCpus);
-    }
-
-    if (Objects.nonNull(resources) && Objects.nonNull(resources.get("gpus"))) {
-      task.setGpus(resources.get("gpus").intValue());
-    }
-
-    if (Objects.nonNull(uploadTaskArchive.getDescriptorFileAsJson().get("description")))
-      task.setDescription(
-          uploadTaskArchive.getDescriptorFileAsJson().get("description").textValue());
-
-    task.setAuthors(getAuthors(uploadTaskArchive));
-    task.setInputs(getInputs(uploadTaskArchive));
-    task.setOutputs(getOutputs(uploadTaskArchive, task.getInputs()));
-
-    log.info("UploadTask: saving task...");
-    taskRepository.save(task);
-    log.info("UploadTask: task saved");
-
-    return Optional.of(makeTaskDescription(task));
-  }
 
     private Set<Input> getInputs(UploadTaskArchive uploadTaskArchive) {
     log.info("UploadTask: getting inputs...");
