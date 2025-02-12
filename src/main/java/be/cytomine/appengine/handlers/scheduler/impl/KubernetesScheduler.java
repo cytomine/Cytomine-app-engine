@@ -254,29 +254,29 @@ public class KubernetesScheduler implements SchedulerHandler {
     return schedule;
   }
 
-  @Override
-  public void alive() throws SchedulingException {
-    log.info("Alive: check if the scheduler is up and running");
+    @Override
+    public void alive() throws SchedulingException {
+        log.info("Alive: check if the scheduler is up and running");
 
-    try {
-      kubernetesClient
+        try {
+          kubernetesClient
           .pods()
           .inNamespace("default")
           .list();
-    } catch (KubernetesClientException e) {
-      throw new SchedulingException("Scheduler is not alive");
+        } catch (KubernetesClientException e) {
+        throw new SchedulingException("Scheduler is not alive");
+        }
     }
-  }
 
-  @Override
-  @PostConstruct
-  public void monitor() throws SchedulingException {
-    log.info("Monitor: add informer to the cluster");
-    kubernetesClient
+    @Override
+    @PostConstruct
+    public void monitor() throws SchedulingException {
+      log.info("Monitor: add informer to the cluster");
+      kubernetesClient
         .pods()
         .inNamespace("default")
         .inform(podInformer)
         .run();
-    log.info("Monitor: informer added");
-  }
+      log.info("Monitor: informer added");
+    }
 }
