@@ -129,7 +129,7 @@ public class KubernetesScheduler implements SchedulerHandler {
             .endMetadata();
 
 
-        // Define taskResources for the task
+        // Define helper container resources
         ResourceRequirementsBuilder helperContainersResourcesBuilder =
             new ResourceRequirements()
             .toBuilder()
