@@ -56,89 +56,89 @@ import org.springframework.web.multipart.MultipartFile;
 @Service
 public class TaskService {
 
-  private final TaskRepository taskRepository;
+    private final TaskRepository taskRepository;
 
-  private final RunRepository runRepository;
+    private final RunRepository runRepository;
 
-  private final StorageHandler fileStorageHandler;
+    private final StorageHandler fileStorageHandler;
 
-  private final RegistryHandler registryHandler;
+    private final RegistryHandler registryHandler;
 
-  private final TaskValidationService taskValidationService;
+    private final TaskValidationService taskValidationService;
 
-  private final ArchiveUtils archiveUtils;
+    private final ArchiveUtils archiveUtils;
 
-  @Value("${storage.input.charset}")
-  private String charset;
+    @Value("${storage.input.charset}")
+    private String charset;
 
-  @Value("${scheduler.task-resources.ram}")
-  private String defaultRam;
+    @Value("${scheduler.task-resources.ram}")
+    private String defaultRam;
 
-  @Value("${scheduler.task-resources.cpus}")
-  private int defaultCpus;
+    @Value("${scheduler.task-resources.cpus}")
+    private int defaultCpus;
 
-  @Transactional
-  public Optional<TaskDescription> uploadTask(MultipartFile taskArchive)
-      throws BundleArchiveException, TaskServiceException, ValidationException {
+    @Transactional
+    public Optional<TaskDescription> uploadTask(MultipartFile taskArchive)
+        throws BundleArchiveException, TaskServiceException, ValidationException {
 
-    log.info("UploadTask: building archive...");
-    UploadTaskArchive uploadTaskArchive = archiveUtils.readArchive(taskArchive);
-    log.info("UploadTask: Archive is built");
-    validateTaskBundle(uploadTaskArchive);
-    log.info("UploadTask: Archive validated");
+            log.info("UploadTask: building archive...");
+            UploadTaskArchive uploadTaskArchive = archiveUtils.readArchive(taskArchive);
+            log.info("UploadTask: Archive is built");
+            validateTaskBundle(uploadTaskArchive);
+            log.info("UploadTask: Archive validated");
 
-    TaskIdentifiers taskIdentifiers = generateTaskIdentifiers(uploadTaskArchive);
-    log.info("UploadTask: Task identifiers generated {}", taskIdentifiers);
+            TaskIdentifiers taskIdentifiers = generateTaskIdentifiers(uploadTaskArchive);
+            log.info("UploadTask: Task identifiers generated {}", taskIdentifiers);
 
-    Storage storage = new Storage(taskIdentifiers.getStorageIdentifier());
-    try {
-      fileStorageHandler.createStorage(storage);
-      log.info("UploadTask: Storage is created for task");
-    } catch (FileStorageException e) {
-      log.error("UploadTask: failed to create storage [{}]", e.getMessage());
-      AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_CREATING_STORAGE_FAILED);
-      throw new TaskServiceException(error);
-    }
+            Storage storage = new Storage(taskIdentifiers.getStorageIdentifier());
+            try {
+                fileStorageHandler.createStorage(storage);
+                log.info("UploadTask: Storage is created for task");
+            } catch (FileStorageException e) {
+                log.error("UploadTask: failed to create storage [{}]", e.getMessage());
+                AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_CREATING_STORAGE_FAILED);
+                throw new TaskServiceException(error);
+            }
 
-    try {
-      fileStorageHandler.saveStorageData(
-          storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
-      log.info("UploadTask: descriptor.yml is stored in object storage");
-    } catch (FileStorageException e) {
-      try {
-        log.info("UploadTask: failed to store descriptor.yml");
-        log.info("UploadTask: attempting deleting storage...");
-        fileStorageHandler.deleteStorage(storage);
-        log.info("UploadTask: storage deleted");
-      } catch (FileStorageException ex) {
-        log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
-        AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_STORING_TASK_DEFINITION_FAILED);
-        throw new TaskServiceException(error);
-      }
-      return Optional.empty();
-    }
+            try {
+                fileStorageHandler.saveStorageData(
+                storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
+                log.info("UploadTask: descriptor.yml is stored in object storage");
+            } catch (FileStorageException e) {
+                try {
+                    log.info("UploadTask: failed to store descriptor.yml");
+                    log.info("UploadTask: attempting deleting storage...");
+                    fileStorageHandler.deleteStorage(storage);
+                    log.info("UploadTask: storage deleted");
+                } catch (FileStorageException ex) {
+                    log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
+                    AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_STORING_TASK_DEFINITION_FAILED);
+                    throw new TaskServiceException(error);
+                }
+                return Optional.empty();
+            }
 
-    log.info("UploadTask: pushing task image...");
-    DockerImage image =
-        new DockerImage(
+            log.info("UploadTask: pushing task image...");
+            DockerImage image =
+                new DockerImage(
             uploadTaskArchive.getDockerImage(), taskIdentifiers.getImageRegistryCompliantName());
-    try {
-      registryHandler.pushImage(image);
-    } catch (RegistryException e) {
-      try {
-        log.debug("UploadTask: failed to push image to registry");
-        log.debug("UploadTask: attempting to delete storage...");
-        fileStorageHandler.deleteStorage(storage);
-        log.info("UploadTask: storage deleted");
-      } catch (FileStorageException ex) {
-        log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
-        AppEngineError error = ErrorBuilder.build(ErrorCode.REGISTRY_PUSHING_TASK_IMAGE_FAILED);
-        throw new TaskServiceException(error);
-      }
-    } finally {
-      uploadTaskArchive.getDockerImage().delete();
-    }
-    log.info("UploadTask: image pushed to registry");
+        try {
+            registryHandler.pushImage(image);
+        } catch (RegistryException e) {
+        try {
+            log.debug("UploadTask: failed to push image to registry");
+            log.debug("UploadTask: attempting to delete storage...");
+            fileStorageHandler.deleteStorage(storage);
+            log.info("UploadTask: storage deleted");
+        } catch (FileStorageException ex) {
+            log.error("UploadTask: file storage service is failing [{}]", ex.getMessage());
+            AppEngineError error = ErrorBuilder.build(ErrorCode.REGISTRY_PUSHING_TASK_IMAGE_FAILED);
+            throw new TaskServiceException(error);
+        }
+        } finally {
+            uploadTaskArchive.getDockerImage().delete();
+        }
+        log.info("UploadTask: image pushed to registry");
 
     // save task info
     Task task = new Task();
@@ -198,7 +198,7 @@ public class TaskService {
     return Optional.of(makeTaskDescription(task));
   }
 
-  private Set<Input> getInputs(UploadTaskArchive uploadTaskArchive) {
+    private Set<Input> getInputs(UploadTaskArchive uploadTaskArchive) {
     log.info("UploadTask: getting inputs...");
     Set<Input> inputs = new HashSet<>();
     JsonNode inputsNode = uploadTaskArchive.getDescriptorFileAsJson().get("inputs");
@@ -241,7 +241,7 @@ public class TaskService {
     return inputs;
   }
 
-  private Set<Output> getOutputs(UploadTaskArchive uploadTaskArchive, Set<Input> inputs) {
+    private Set<Output> getOutputs(UploadTaskArchive uploadTaskArchive, Set<Input> inputs) {
     log.info("UploadTask: getting outputs...");
 
     JsonNode outputsNode = uploadTaskArchive.getDescriptorFileAsJson().get("outputs");
@@ -279,7 +279,7 @@ public class TaskService {
     return outputs;
   }
 
-  private Set<Author> getAuthors(UploadTaskArchive uploadTaskArchive) {
+    private Set<Author> getAuthors(UploadTaskArchive uploadTaskArchive) {
     log.info("UploadTask: getting authors...");
     Set<Author> authors = new HashSet<>();
     JsonNode authorNode = uploadTaskArchive.getDescriptorFileAsJson().get("authors");
@@ -298,13 +298,13 @@ public class TaskService {
     return authors;
   }
 
-  private void validateTaskBundle(UploadTaskArchive uploadTaskArchive) throws ValidationException {
+    private void validateTaskBundle(UploadTaskArchive uploadTaskArchive) throws ValidationException {
     taskValidationService.validateDescriptorFile(uploadTaskArchive);
     taskValidationService.checkIsNotDuplicate(uploadTaskArchive);
     taskValidationService.validateImage(uploadTaskArchive);
   }
 
-  private TaskIdentifiers generateTaskIdentifiers(UploadTaskArchive uploadTaskArchive) {
+    private TaskIdentifiers generateTaskIdentifiers(UploadTaskArchive uploadTaskArchive) {
     UUID taskLocalIdentifier = UUID.randomUUID();
     String storageIdentifier = "task-" + taskLocalIdentifier + "-def";
     String imageIdentifierFromDescriptor =
@@ -316,7 +316,7 @@ public class TaskService {
     return new TaskIdentifiers(taskLocalIdentifier, storageIdentifier, imageRegistryCompliantName);
   }
 
-  public StorageData retrieveYmlDescriptor(String namespace, String version)
+    public StorageData retrieveYmlDescriptor(String namespace, String version)
       throws TaskServiceException, TaskNotFoundException {
     log.info("Storage : retrieving descriptor.yml...");
     Task task = taskRepository.findByNamespaceAndVersion(namespace, version);
@@ -334,7 +334,7 @@ public class TaskService {
     return file;
   }
 
-  public StorageData retrieveYmlDescriptor(String id)
+    public StorageData retrieveYmlDescriptor(String id)
       throws TaskServiceException, TaskNotFoundException {
     log.info("Storage : retrieving descriptor.yml...");
     Optional<Task> task = taskRepository.findById(UUID.fromString(id));
@@ -351,17 +351,17 @@ public class TaskService {
     return file;
   }
 
-  public Optional<TaskDescription> retrieveTaskDescription(String id) {
+    public Optional<TaskDescription> retrieveTaskDescription(String id) {
     Optional<Task> task = findById(id);
     return task.map(this::makeTaskDescription);
   }
 
-  public Optional<TaskDescription> retrieveTaskDescription(String namespace, String version) {
+    public Optional<TaskDescription> retrieveTaskDescription(String namespace, String version) {
     Optional<Task> task = findByNamespaceAndVersion(namespace, version);
     return task.map(this::makeTaskDescription);
   }
 
-  public List<TaskDescription> retrieveTaskDescriptions() {
+    public List<TaskDescription> retrieveTaskDescriptions() {
     List<Task> tasks = findAll();
     List<TaskDescription> taskDescriptions = new ArrayList<>();
     for (Task task : tasks) {
@@ -371,7 +371,7 @@ public class TaskService {
     return taskDescriptions;
   }
 
-  public TaskDescription makeTaskDescription(Task task) {
+    public TaskDescription makeTaskDescription(Task task) {
     TaskDescription taskDescription =
         new TaskDescription(
             task.getIdentifier(),
@@ -394,7 +394,7 @@ public class TaskService {
     return taskDescription;
   }
 
-  public List<TaskInput> makeTaskInputs(Task task) {
+    public List<TaskInput> makeTaskInputs(Task task) {
     List<TaskInput> inputs = new ArrayList<>();
     for (Input input : task.getInputs()) {
       inputs.add(TaskInputFactory.createTaskInput(input));
@@ -402,7 +402,7 @@ public class TaskService {
     return inputs;
   }
 
-  public List<TaskOutput> makeTaskOutputs(Task task) {
+    public List<TaskOutput> makeTaskOutputs(Task task) {
     List<TaskOutput> outputs = new ArrayList<>();
     for (Output output : task.getOutputs()) {
       outputs.add(TaskOutputFactory.createTaskOutput(output));
@@ -410,29 +410,29 @@ public class TaskService {
     return outputs;
   }
 
-  public List<Task> findAll() {
+    public List<Task> findAll() {
     log.info("tasks: retrieving tasks...");
     List<Task> taskList = taskRepository.findAll();
     log.info("tasks: retrieved tasks");
     return taskList;
   }
 
-  public Optional<Task> findById(String id) {
+    public Optional<Task> findById(String id) {
     log.info("Data: retrieving task...");
     Optional<Task> task = taskRepository.findById(UUID.fromString(id));
     log.info("Data: retrieved task");
     return task;
   }
 
-  public Optional<Task> findByNamespaceAndVersion(String namespace, String version) {
+    public Optional<Task> findByNamespaceAndVersion(String namespace, String version) {
     log.info("tasks/{namespace}/{version}: retrieving task...");
     Task task = taskRepository.findByNamespaceAndVersion(namespace, version);
     log.info("tasks/{namespace}/{version}: retrieved task...");
     return Optional.ofNullable(task);
   }
 
-  @Transactional
-  public TaskRun createRunForTask(String namespace, String version) throws RunTaskServiceException {
+    @Transactional
+    public TaskRun createRunForTask(String namespace, String version) throws RunTaskServiceException {
     log.info("tasks/{namespace}/{version}/runs: creating run...");
     // find associated task
     log.info("tasks/{namespace}/{version}/runs: retrieving associated task...");
@@ -457,8 +457,8 @@ public class TaskService {
     return new TaskRun(taskRunID, makeTaskDescription(task), TaskRunState.CREATED);
   }
 
-  @Transactional
-  public TaskRun createRunForTask(String taskId) throws RunTaskServiceException {
+    @Transactional
+    public TaskRun createRunForTask(String taskId) throws RunTaskServiceException {
     log.info("tasks/{id}/runs : creating run...");
     // find associated task
     log.info("tasks/{namespace}/{version}/runs : retrieving associated task...");
@@ -482,7 +482,7 @@ public class TaskService {
     return new TaskRun(taskRunID, makeTaskDescription(task.get()), TaskRunState.CREATED);
   }
 
-  private void createRunStorages(UUID taskRunID) throws RunTaskServiceException {
+    private void createRunStorages(UUID taskRunID) throws RunTaskServiceException {
     String inputStorageIdentifier = "task-run-inputs-" + taskRunID.toString();
     String outputsStorageIdentifier = "task-run-outputs-" + taskRunID;
     Storage inputStorage = new Storage(inputStorageIdentifier);
