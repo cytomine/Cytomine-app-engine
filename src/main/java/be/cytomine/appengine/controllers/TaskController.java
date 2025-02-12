@@ -1,10 +1,12 @@
 package be.cytomine.appengine.controllers;
 
+import java.io.File;
 import java.util.List;
 import java.util.Optional;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -167,11 +169,21 @@ public class TaskController {
     ) throws TaskServiceException {
         log.info("tasks/{namespace}/{version}/descriptor.yml GET");
         try {
-            StorageData file = taskService.retrieveYmlDescriptor(namespace, version);
-            log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
+            StorageData data = taskService.retrieveYmlDescriptor(namespace, version);
+            File file = data.peek().getData();
+            FileSystemResource resource = new FileSystemResource(file);
+
             HttpHeaders headers = new HttpHeaders();
+            headers.add(
+                HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + file.getName() + "\""
+            );
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            return new ResponseEntity<>(file.peek().getData(), headers, HttpStatus.OK);
+            log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
+
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(resource);
         } catch (TaskNotFoundException e) {
             log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
             return new ResponseEntity<>(
@@ -186,15 +198,25 @@ public class TaskController {
     public ResponseEntity<?> findDescriptorOfTaskById(
         @PathVariable String id
     ) throws TaskServiceException {
-        log.info("tasks/{namespace}/{version}/descriptor.yml GET");
+        log.info("tasks/{id}/descriptor.yml GET");
         try {
-            StorageData file = taskService.retrieveYmlDescriptor(id);
-            log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
+            StorageData data = taskService.retrieveYmlDescriptor(id);
+            File file = data.peek().getData();
+            FileSystemResource resource = new FileSystemResource(file);
+
             HttpHeaders headers = new HttpHeaders();
+            headers.add(
+                HttpHeaders.CONTENT_DISPOSITION,
+                "attachment; filename=\"" + file.getName() + "\""
+            );
             headers.setContentType(MediaType.APPLICATION_OCTET_STREAM);
-            return new ResponseEntity<>(file.peek().getData(), headers, HttpStatus.OK);
+            log.info("tasks/{id}/descriptor.yml GET Ended");
+
+            return ResponseEntity.ok()
+                .headers(headers)
+                .body(resource);
         } catch (TaskNotFoundException e) {
-            log.info("tasks/{namespace}/{version}/descriptor.yml GET Ended");
+            log.info("tasks/{id}/descriptor.yml GET Ended");
             return new ResponseEntity<>(
                 ErrorBuilder.build(ErrorCode.INTERNAL_TASK_NOT_FOUND),
                 HttpStatus.NOT_FOUND
