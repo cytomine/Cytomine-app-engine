@@ -703,9 +703,17 @@ public class TaskProvisioningService {
     @NotNull
     private StateAction run(Run run) throws ProvisioningException, SchedulingException {
         log.info("Running Task: scheduling...");
-        if (!run.getState().equals(TaskRunState.PROVISIONED)) {
-            AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_NOT_PROVISIONED);
-            throw new ProvisioningException(error);
+
+        AppEngineError error = null;
+        switch (run.getState()) {
+            case CREATED:
+                error = ErrorBuilder.build(ErrorCode.INTERNAL_NOT_PROVISIONED);
+                throw new ProvisioningException(error);
+            case PROVISIONED:
+                break;
+            default:
+                error = ErrorBuilder.build(ErrorCode.INTERNAL_INVALID_TASK_RUN_STATE);
+                throw new ProvisioningException(error);
         }
         log.info("Running Task: valid run");
 
