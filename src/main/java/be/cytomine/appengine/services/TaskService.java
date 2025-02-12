@@ -1,23 +1,5 @@
 package be.cytomine.appengine.services;
 
-import java.util.ArrayList;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.Objects;
-import java.util.Optional;
-import java.util.Set;
-import java.util.UUID;
-
-import com.fasterxml.jackson.databind.JsonNode;
-import jakarta.transaction.Transactional;
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.stereotype.Service;
-import org.springframework.web.multipart.MultipartFile;
-
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
 import be.cytomine.appengine.dto.handlers.registry.DockerImage;
 import be.cytomine.appengine.dto.inputs.task.TaskAuthor;
@@ -52,64 +34,80 @@ import be.cytomine.appengine.repositories.RunRepository;
 import be.cytomine.appengine.repositories.TaskRepository;
 import be.cytomine.appengine.states.TaskRunState;
 import be.cytomine.appengine.utils.ArchiveUtils;
+import com.fasterxml.jackson.databind.JsonNode;
+import jakarta.transaction.Transactional;
+import java.time.LocalDateTime;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
 @Slf4j
 @RequiredArgsConstructor
 @Service
 public class TaskService {
 
-    private final TaskRepository taskRepository;
+  private final TaskRepository taskRepository;
 
-    private final RunRepository runRepository;
+  private final RunRepository runRepository;
 
-    private final StorageHandler fileStorageHandler;
+  private final StorageHandler fileStorageHandler;
 
-    private final RegistryHandler registryHandler;
+  private final RegistryHandler registryHandler;
 
-    private final TaskValidationService taskValidationService;
+  private final TaskValidationService taskValidationService;
 
-    private final ArchiveUtils archiveUtils;
+  private final ArchiveUtils archiveUtils;
 
-    @Value("${storage.input.charset}")
-    private String charset;
+  @Value("${storage.input.charset}")
+  private String charset;
 
-    @Value("${scheduler.task-resources.ram}")
-    private String defaultRam;
+  @Value("${scheduler.task-resources.ram}")
+  private String defaultRam;
 
-    @Value("${scheduler.task-resources.cpus}")
-    private int defaultCpus;
+  @Value("${scheduler.task-resources.cpus}")
+  private int defaultCpus;
 
-    @Transactional
-    public Optional<TaskDescription> uploadTask(MultipartFile taskArchive)
+  @Transactional
+  public Optional<TaskDescription> uploadTask(MultipartFile taskArchive)
       throws BundleArchiveException, TaskServiceException, ValidationException {
 
-        log.info("UploadTask: building archive...");
-        UploadTaskArchive uploadTaskArchive = archiveUtils.readArchive(taskArchive);
-        log.info("UploadTask: Archive is built");
-        validateTaskBundle(uploadTaskArchive);
-        log.info("UploadTask: Archive validated");
+    log.info("UploadTask: building archive...");
+    UploadTaskArchive uploadTaskArchive = archiveUtils.readArchive(taskArchive);
+    log.info("UploadTask: Archive is built");
+    validateTaskBundle(uploadTaskArchive);
+    log.info("UploadTask: Archive validated");
 
-        TaskIdentifiers taskIdentifiers = generateTaskIdentifiers(uploadTaskArchive);
-        log.info("UploadTask: Task identifiers generated {}", taskIdentifiers);
+    TaskIdentifiers taskIdentifiers = generateTaskIdentifiers(uploadTaskArchive);
+    log.info("UploadTask: Task identifiers generated {}", taskIdentifiers);
 
-        Storage storage = new Storage(taskIdentifiers.getStorageIdentifier());
-        try {
-              fileStorageHandler.createStorage(storage);
-              log.info("UploadTask: Storage is created for task");
-        } catch (FileStorageException e) {
-              log.error("UploadTask: failed to create storage [{}]", e.getMessage());
-              AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_CREATING_STORAGE_FAILED);
-              throw new TaskServiceException(error);
-        }
+    Storage storage = new Storage(taskIdentifiers.getStorageIdentifier());
+    try {
+      fileStorageHandler.createStorage(storage);
+      log.info("UploadTask: Storage is created for task");
+    } catch (FileStorageException e) {
+      log.error("UploadTask: failed to create storage [{}]", e.getMessage());
+      AppEngineError error = ErrorBuilder.build(ErrorCode.STORAGE_CREATING_STORAGE_FAILED);
+      throw new TaskServiceException(error);
+    }
 
-        try {
-              fileStorageHandler.saveStorageData(
-              storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
-              log.info("UploadTask: descriptor.yml is stored in object storage");
-        } catch (FileStorageException e) {
-        try {
-              log.info("UploadTask: failed to store descriptor.yml");
-              log.info("UploadTask: attempting deleting storage...");
+    try {
+      fileStorageHandler.saveStorageData(
+          storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
+      log.info("UploadTask: descriptor.yml is stored in object storage");
+    } catch (FileStorageException e) {
+      try {
+        log.info("UploadTask: failed to store descriptor.yml");
+        log.info("UploadTask: attempting deleting storage...");
         fileStorageHandler.deleteStorage(storage);
         log.info("UploadTask: storage deleted");
       } catch (FileStorageException ex) {
@@ -486,7 +484,7 @@ public class TaskService {
 
   private void createRunStorages(UUID taskRunID) throws RunTaskServiceException {
     String inputStorageIdentifier = "task-run-inputs-" + taskRunID.toString();
-    String outputsStorageIdentifier = "task-run-outputs-" + taskRunID.toString();
+    String outputsStorageIdentifier = "task-run-outputs-" + taskRunID;
     Storage inputStorage = new Storage(inputStorageIdentifier);
     Storage outputStorage = new Storage(outputsStorageIdentifier);
     try {
