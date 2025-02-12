@@ -107,7 +107,7 @@ public class TaskProvisioningService {
                 );
                 throw new ProvisioningException(error);
             }
-        } else if (value instanceof byte[]) {
+        } else if (value instanceof File) {
             genericParameterProvision.setParameterName(name);
             genericParameterProvision.setValue(value);
         }
@@ -128,10 +128,10 @@ public class TaskProvisioningService {
         JsonNode provision = null;
         if (value instanceof JsonNode) {
             provision = (JsonNode) value;
-        } else if (value instanceof byte[]) {
+        } else if (value instanceof File) {
             ObjectNode objectNode = (new ObjectMapper()).createObjectNode();
             objectNode.put("param_name", name);
-            objectNode.put("value", (byte[]) value);
+            objectNode.put("value", ((File) value).getAbsolutePath());
             provision = objectNode;
         }
 

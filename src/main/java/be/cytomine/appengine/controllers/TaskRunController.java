@@ -3,6 +3,7 @@ package be.cytomine.appengine.controllers;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.util.List;
@@ -77,10 +78,14 @@ public class TaskRunController {
         @RequestParam MultipartFile file
     ) throws IOException, ProvisioningException {
         log.info("/task-runs/{run_id}/input-provisions/{param_name} File PUT");
+
+        Path data = Files.createTempFile(parameterName, null);
+        file.transferTo(data);
+
         JsonNode provisioned = taskRunService.provisionRunParameter(
             runId,
             parameterName,
-            file
+            data.toFile()
         );
         log.info("/task-runs/{run_id}/input-provisions/{param_name} File PUT Ended");
 
@@ -106,7 +111,7 @@ public class TaskRunController {
     @ResponseStatus(code = HttpStatus.OK)
     public ResponseEntity<?> getRun(
         @PathVariable("run_id") String runId
-    ) throws ProvisioningException, IOException, FileStorageException {
+    ) throws ProvisioningException {
         log.info("/task-runs/{run_id} GET");
         TaskRunResponse run = taskRunService.retrieveRun(runId);
         log.info("/task-runs/{run_id} GET Ended");
@@ -129,9 +134,9 @@ public class TaskRunController {
 
     @GetMapping(value = "/task-runs/{run_id}/inputs")
     @ResponseStatus(code = HttpStatus.OK)
-    public ResponseEntity<?> getRuninputsList(
+    public ResponseEntity<?> getRunInputsList(
         @PathVariable("run_id") String runId
-    ) throws ProvisioningException, IOException, FileStorageException {
+    ) throws ProvisioningException {
         log.info("/task-runs/{run_id}/inputs GET");
         List<TaskRunParameterValue> outputs = taskRunService.retrieveRunInputs(runId);
         log.info("/task-runs/{run_id}/inputs GET Ended");
@@ -179,7 +184,7 @@ public class TaskRunController {
     @ResponseStatus(code = HttpStatus.OK)
     public ResponseEntity<?> getRunOutputsList(
         @PathVariable("run_id") String runId
-    ) throws ProvisioningException, IOException, FileStorageException {
+    ) throws ProvisioningException {
         log.info("/task-runs/{run_id}/outputs GET");
         List<TaskRunParameterValue> outputs = taskRunService.retrieveRunOutputs(runId);
         log.info("/task-runs/{run_id}/outputs GET Ended");

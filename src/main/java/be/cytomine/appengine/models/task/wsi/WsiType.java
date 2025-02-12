@@ -1,7 +1,7 @@
 package be.cytomine.appengine.models.task.wsi;
 
 import java.awt.Dimension;
-import java.io.IOException;
+import java.io.File;
 import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -183,16 +183,9 @@ public class WsiType extends Type {
     @Override
     public StorageData mapToStorageFileData(JsonNode provision) {
         String parameterName = provision.get("param_name").asText();
-        byte[] inputFileData = null;
-
-        try {
-            inputFileData = provision.get("value").binaryValue();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        StorageDataEntry storageDataEntry = new StorageDataEntry(inputFileData, parameterName, StorageDataType.FILE);
-        return new StorageData(storageDataEntry);
+        File data = new File(provision.get("value").asText());
+        StorageDataEntry entry = new StorageDataEntry(data, parameterName, StorageDataType.FILE);
+        return new StorageData(entry);
     }
 
     @Override
