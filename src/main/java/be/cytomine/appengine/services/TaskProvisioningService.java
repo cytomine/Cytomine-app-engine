@@ -324,7 +324,7 @@ public class TaskProvisioningService {
         Run run = getRunIfValid(runId);
         TaskRunState state = run.getState();
 
-        if ((type == ParameterType.INPUT && !state.equals(TaskRunState.PROVISIONED))
+        if ((type == ParameterType.INPUT && state.equals(TaskRunState.CREATED))
             || (type == ParameterType.OUTPUT && !state.equals(TaskRunState.FINISHED))) {
             AppEngineError error = ErrorBuilder.build(ErrorCode.INTERNAL_INVALID_TASK_RUN_STATE);
             throw new ProvisioningException(error);
