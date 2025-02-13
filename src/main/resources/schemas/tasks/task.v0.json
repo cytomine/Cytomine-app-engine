@@ -87,11 +87,6 @@
               "default": "1Gi",
               "description": "The minimum amount of RAM that the task requires."
             },
-            "vram": {
-              "$ref": "#/$defs/types/memory",
-              "default": "8Gi",
-              "description": "The minimum amount of GPU VRAM that the task requires."
-            },
             "gpus": {
               "type": "integer",
               "default": 0,

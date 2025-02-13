@@ -175,25 +175,14 @@ public class TaskService {
         // resources
         JsonNode resources =
             uploadTaskArchive.getDescriptorFileAsJson().get("configuration").get("resources");
-        if (Objects.nonNull(resources) && Objects.nonNull(resources.get("ram"))) {
-            task.setRam(resources.get("ram").textValue());
-        } else {
+
+        if (!Objects.nonNull(resources)) {
             task.setRam(defaultRam);
-        }
-
-        if (Objects.nonNull(resources) && Objects.nonNull(resources.get("cpus"))) {
-            task.setCpus(resources.get("cpus").intValue());
-        } else {
             task.setCpus(defaultCpus);
-        }
-
-        if (Objects.nonNull(resources) && Objects.nonNull(resources.get("gpus"))) {
-            task.setGpus(resources.get("gpus").intValue());
-        }
-
-        if (Objects.nonNull(uploadTaskArchive.getDescriptorFileAsJson().get("description")))   {
-            task.setDescription(
-                uploadTaskArchive.getDescriptorFileAsJson().get("description").textValue());
+        } else {
+            task.setRam(resources.path("ram").asText(defaultRam));
+            task.setCpus(resources.path("cpus").asInt(defaultCpus));
+            task.setGpus(resources.path("gpus").asInt(0));
         }
 
         task.setAuthors(getAuthors(uploadTaskArchive));
@@ -497,7 +486,7 @@ public class TaskService {
     }
 
     private void createRunStorages(UUID taskRunID) throws RunTaskServiceException {
-        String inputStorageIdentifier = "task-run-inputs-" + taskRunID.toString();
+        String inputStorageIdentifier = "task-run-inputs-" + taskRunID;
         String outputsStorageIdentifier = "task-run-outputs-" + taskRunID;
         Storage inputStorage = new Storage(inputStorageIdentifier);
         Storage outputStorage = new Storage(outputsStorageIdentifier);
