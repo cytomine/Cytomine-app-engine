@@ -9,6 +9,8 @@ import java.util.Arrays;
 
 public class PngFormat implements FileFormat {
 
+    private static final int IHDR_SIZE = 8;
+
     public static final byte[] SIGNATURE = {
         (byte) 0x89, (byte) 0x50, (byte) 0x4E, (byte) 0x47,
         (byte) 0x0D, (byte) 0x0A, (byte) 0x1A, (byte) 0x0A
@@ -32,10 +34,14 @@ public class PngFormat implements FileFormat {
 
     @Override
     public Dimension getDimensions(File file) {
-        byte[] ihdrChunk = new byte[8];
+        byte[] ihdrChunk = new byte[IHDR_SIZE];
 
         try (FileInputStream fis = new FileInputStream(file)) {
-            if (fis.read(ihdrChunk, 0, 8) != 8) {
+            if (fis.skip(SIGNATURE.length) != SIGNATURE.length) {
+                return null;
+            }
+
+            if (fis.read(ihdrChunk) != IHDR_SIZE) {
                 return null;
             }
 
