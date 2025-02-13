@@ -101,7 +101,7 @@ public class StorageTest {
         );
         String randomText = "This is a random text";
         StorageDataEntry randomTextFile = new StorageDataEntry(
-            FileHelper.write("folder/subdir/random", randomText.getBytes(StandardCharsets.UTF_8)),
+            FileHelper.write("random", randomText.getBytes(StandardCharsets.UTF_8)),
             "folder/subdir/random",
             StorageDataType.FILE
         );
@@ -150,7 +150,7 @@ public class StorageTest {
         );
         String randomText = "This is a random text";
         StorageDataEntry randomTextFile = new StorageDataEntry(
-            FileHelper.write("folder/subdir/random", randomText.getBytes(StandardCharsets.UTF_8)),
+            FileHelper.write("random", randomText.getBytes(StandardCharsets.UTF_8)),
             "folder/subdir/random",
             StorageDataType.FILE
         );
@@ -168,7 +168,7 @@ public class StorageTest {
         StorageData secondNestedDirectory = new StorageData();
         String orderedText = "This is an ordered text";
         StorageDataEntry orderedTextFile = new StorageDataEntry(
-            FileHelper.write("folder/subdir/ordered", orderedText.getBytes(StandardCharsets.UTF_8)),
+            FileHelper.write("ordered", orderedText.getBytes(StandardCharsets.UTF_8)),
             "folder/subdir/ordered",
             StorageDataType.FILE
         );
