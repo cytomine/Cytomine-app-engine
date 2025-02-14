@@ -21,10 +21,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootContextLoader;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.web.client.RestTemplate;
 
 import be.cytomine.appengine.AppEngineApplication;
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
@@ -38,6 +36,7 @@ import be.cytomine.appengine.openapi.api.DefaultApi;
 import be.cytomine.appengine.openapi.invoker.ApiException;
 import be.cytomine.appengine.openapi.model.TaskDescription;
 import be.cytomine.appengine.repositories.TaskRepository;
+import be.cytomine.appengine.utils.ApiClient;
 import be.cytomine.appengine.utils.FileHelper;
 import be.cytomine.appengine.utils.TestTaskBuilder;
 
@@ -48,6 +47,9 @@ public class UploadTaskStepDefinitions {
     private String port;
 
     @Autowired
+    private ApiClient apiClient;
+
+    @Autowired
     private DefaultApi appEngineAPI;
 
     @Autowired
@@ -55,12 +57,6 @@ public class UploadTaskStepDefinitions {
 
     @Autowired
     private StorageHandler storageHandler;
-
-    @Value("${app-engine.api_prefix}")
-    private String apiPrefix;
-
-    @Value("${app-engine.api_version}")
-    private String apiVersion;
 
     @Value("${registry-client.host}")
     private String registry;
@@ -81,7 +77,8 @@ public class UploadTaskStepDefinitions {
 
     @Given("App Engine is up and running")
     public void app_engine_is_up_and_running() {
-        ResponseEntity<String> health = new RestTemplate().exchange("http://localhost:" + port + "/actuator/health", HttpMethod.GET, null, String.class);
+        String url = "http://localhost:" + port + "/actuator/health";
+        ResponseEntity<String> health = apiClient.get(url, String.class);
         Assertions.assertTrue(health.getStatusCode().is2xxSuccessful());
         taskRepository.deleteAll();
     }
@@ -89,7 +86,7 @@ public class UploadTaskStepDefinitions {
     @Given("File storage service is up and running")
     public void file_storage_service_is_up_and_running() throws FileStorageException {
         // ping the file storage service health endpoint and make sure we get no errors
-//      // as long as it responds it means it's up and running
+        // as long as it responds it means it's up and running
         storageHandler.checkStorageExists("random");
     }
 
