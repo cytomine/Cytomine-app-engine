@@ -110,6 +110,7 @@ public class KubernetesScheduler implements SchedulerHandler {
         Task task = run.getTask();
         String podName = task.getName().toLowerCase().replaceAll("[^a-zA-Z0-9]", "") + "-" + runId;
         String imageName = getRegistryAddress() + "/" + task.getImageName();
+        String runSecret = String.valueOf(run.getSecret());
 
         log.info("Schedule: create task pod...");
 
@@ -205,7 +206,8 @@ public class KubernetesScheduler implements SchedulerHandler {
 
             .build();
 
-        String sendOutputs = "curl -X POST -F 'outputs=@outputs.zip' " + url + "/outputs.zip";
+        String sendOutputs = "curl -X POST -F 'outputs=@outputs.zip' ";
+        sendOutputs += url + "/" + runSecret + "/outputs.zip";
         String zipOutputs = "zip -rj outputs.zip " + task.getOutputFolder();
         String wait = "export TOKEN=$(cat /var/run/secrets/kubernetes.io/serviceaccount/token); ";
         wait += "while ! curl -k -H \"Authorization: Bearer $TOKEN\" ";
