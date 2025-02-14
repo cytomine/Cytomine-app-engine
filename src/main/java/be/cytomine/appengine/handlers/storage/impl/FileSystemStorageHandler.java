@@ -133,12 +133,10 @@ public class FileSystemStorageHandler implements StorageHandler {
                 if (Files.isRegularFile(path)) {
                     current.setData(path.toFile());
                     current.setStorageDataType(StorageDataType.FILE);
-                    emptyFile.add(current);
                 }
 
                 if (Files.isDirectory(path)) {
                     current.setStorageDataType(StorageDataType.DIRECTORY);
-                    emptyFile.add(current);
                 }
             });
 
