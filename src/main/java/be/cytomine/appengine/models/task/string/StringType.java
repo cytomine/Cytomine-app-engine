@@ -107,7 +107,7 @@ public class StringType extends Type {
     public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         StringPersistenceRepository stringPersistenceRepository = AppEngineApplicationContext.getBean(StringPersistenceRepository.class);
         StringPersistence result = stringPersistenceRepository.findStringPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        String output = FileHelper.read(outputValue.poll().getData(), getStorageCharset());
+        String output = FileHelper.read(outputValue.firstStorageDataEntry().getData(), getStorageCharset());
         if (result == null) {
             result = new StringPersistence();
             result.setValueType(ValueType.STRING);
@@ -144,7 +144,7 @@ public class StringType extends Type {
 
     @Override
     public TaskRunParameterValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
-        String outputValue = FileHelper.read(output.poll().getData(), getStorageCharset());
+        String outputValue = FileHelper.read(output.firstStorageDataEntry().getData(), getStorageCharset());
 
         StringValue value = new StringValue();
         value.setParameterName(outputName);

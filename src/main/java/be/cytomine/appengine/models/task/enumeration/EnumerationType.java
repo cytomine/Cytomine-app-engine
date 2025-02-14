@@ -98,7 +98,7 @@ public class EnumerationType extends Type {
     public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         EnumerationPersistenceRepository enumerationPersistenceRepository = AppEngineApplicationContext.getBean(EnumerationPersistenceRepository.class);
         EnumerationPersistence result = enumerationPersistenceRepository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        String output = FileHelper.read(outputValue.poll().getData(), getStorageCharset());
+        String output = FileHelper.read(outputValue.firstStorageDataEntry().getData(), getStorageCharset());
         if (result == null) {
             result = new EnumerationPersistence();
             result.setValue(output);
@@ -134,7 +134,7 @@ public class EnumerationType extends Type {
 
     @Override
     public EnumerationValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
-        String outputValue = FileHelper.read(output.poll().getData(), getStorageCharset());
+        String outputValue = FileHelper.read(output.firstStorageDataEntry().getData(), getStorageCharset());
 
         EnumerationValue enumerationValue = new EnumerationValue();
         enumerationValue.setParameterName(outputName);

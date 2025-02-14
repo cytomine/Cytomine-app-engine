@@ -134,7 +134,7 @@ public class NumberType extends Type {
     public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         NumberPersistenceRepository numberPersistenceRepository = AppEngineApplicationContext.getBean(NumberPersistenceRepository.class);
         NumberPersistence result = numberPersistenceRepository.findNumberPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        String output = FileHelper.read(outputValue.poll().getData(), getStorageCharset());
+        String output = FileHelper.read(outputValue.firstStorageDataEntry().getData(), getStorageCharset());
         double value = Double.parseDouble(output);
         if (result == null) {
             result = new NumberPersistence();
@@ -172,7 +172,7 @@ public class NumberType extends Type {
 
     @Override
     public TaskRunParameterValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
-        String outputValue = FileHelper.read(output.poll().getData(), getStorageCharset());
+        String outputValue = FileHelper.read(output.firstStorageDataEntry().getData(), getStorageCharset());
 
         NumberValue value = new NumberValue();
         value.setParameterName(outputName);

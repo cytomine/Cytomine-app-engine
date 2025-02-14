@@ -348,15 +348,17 @@ public class TaskProvisioningService {
                 new StorageData(provision.getParameterName(), "task-run-" + io + "-" + run.getId())
             );
 
-            while (!provisionFileData.isEmpty()) {
-                StorageDataEntry current = provisionFileData.poll();
+            for (StorageDataEntry current : provisionFileData.getEntryList()) {
                 ZipEntry zipEntry = new ZipEntry(current.getName());
                 zipOut.putNextEntry(zipEntry);
+
                 if (current.getStorageDataType().equals(StorageDataType.FILE)) {
                     Files.copy(current.getData().toPath(), zipOut);
                 }
+
                 zipOut.closeEntry();
             }
+
         }
         zipOut.close();
 
@@ -473,8 +475,8 @@ public class TaskProvisioningService {
             contentsOfZip = contentsOfZip
                 .stream()
                 .sorted((s1, s2) -> Integer.compare(
-                    s2.peek().getName().length(),
-                    s1.peek().getName().length())
+                    s2.firstStorageDataEntry().getName().length(),
+                    s1.firstStorageDataEntry().getName().length())
                 )
                 .toList();
             // merge StorageData objects together
@@ -483,7 +485,7 @@ public class TaskProvisioningService {
                     if (storageData.equals(compared)) {
                         continue;
                     }
-                    if (compared.peek().getName().startsWith(storageData.peek().getName())) {
+                    if (compared.firstStorageDataEntry().getName().startsWith(storageData.firstStorageDataEntry().getName())) {
                         storageData.merge(compared);
                         contentsOfZip.remove(compared);
                     }
@@ -493,23 +495,23 @@ public class TaskProvisioningService {
             for (Output currentOutput : remainingUnStoredOutputs) {
                 Optional<StorageData> currentOutputStorageDataOptional = contentsOfZip
                     .stream()
-                    .filter(s -> s.peek().getName().equals(currentOutput.getName()))
+                    .filter(s -> s.firstStorageDataEntry().getName().equals(currentOutput.getName()))
                     .findFirst();
                 StorageData currentOutputStorageData = null;
                 if (currentOutputStorageDataOptional.isPresent()) {
                     currentOutputStorageData = currentOutputStorageDataOptional.get();
                 }
-                StorageData copyForStorageData = new StorageData(currentOutputStorageData);
-                StorageData copyForOutputResponse = new StorageData(currentOutputStorageData);
+//                StorageData copyForStorageData = new StorageData(currentOutputStorageData);
+//                StorageData copyForOutputResponse = new StorageData(currentOutputStorageData);
                 // read file
                 String outputName = currentOutput.getName();
                 // saving to database does not care about the type
                 saveOutput(run, currentOutput, currentOutputStorageData);
                 // saving to the storage does not care about the type
-                storeOutputInFileStorage(run, copyForStorageData, outputName);
+                storeOutputInFileStorage(run, currentOutputStorageData, outputName);
                 // based on parsed type build the response
                 taskRunParameterValues.add(currentOutput.getType().buildTaskRunParameterValue(
-                    copyForOutputResponse,
+                    currentOutputStorageData,
                     run.getId(),
                     outputName)
                 );
@@ -639,7 +641,7 @@ public class TaskProvisioningService {
         }
 
         log.info("Get IO file from storage: done");
-        return data.peek().getData();
+        return data.firstStorageDataEntry().getData();
     }
 
     private List<TaskRunParameterValue> buildTaskRunParameterValues(Run run, ParameterType type) {

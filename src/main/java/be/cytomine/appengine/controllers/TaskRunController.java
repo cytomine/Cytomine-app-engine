@@ -123,7 +123,7 @@ public class TaskRunController {
     ) throws ProvisioningException, IOException, FileStorageException {
         log.info("/task-runs/{run_id}/inputs.zip GET");
         StorageData data = taskRunService.retrieveIOZipArchive(runId, ParameterType.INPUT);
-        File file = data.peek().getData();
+        File file = data.firstStorageDataEntry().getData();
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(
@@ -221,7 +221,7 @@ public class TaskRunController {
     ) throws ProvisioningException, IOException, FileStorageException {
         log.info("/task-runs/{run_id}/outputs.zip GET");
         StorageData data = taskRunService.retrieveIOZipArchive(runId, ParameterType.OUTPUT);
-        File file = data.peek().getData();
+        File file = data.firstStorageDataEntry().getData();
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(

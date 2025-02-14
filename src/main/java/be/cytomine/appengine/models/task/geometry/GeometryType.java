@@ -144,7 +144,7 @@ public class GeometryType extends Type {
     public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         GeometryPersistenceRepository geometryPersistenceRepository = AppEngineApplicationContext.getBean(GeometryPersistenceRepository.class);
         GeometryPersistence result = geometryPersistenceRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        String output = FileHelper.read(outputValue.poll().getData(), getStorageCharset());
+        String output = FileHelper.read(outputValue.firstStorageDataEntry().getData(), getStorageCharset());
         if (result == null) {
             result = new GeometryPersistence();
             result.setValue(output);
@@ -181,7 +181,7 @@ public class GeometryType extends Type {
 
     @Override
     public TaskRunParameterValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
-        String outputValue = FileHelper.read(output.poll().getData(), getStorageCharset());
+        String outputValue = FileHelper.read(output.firstStorageDataEntry().getData(), getStorageCharset());
 
         GeometryValue geometryValue = new GeometryValue();
         geometryValue.setParameterName(outputName);

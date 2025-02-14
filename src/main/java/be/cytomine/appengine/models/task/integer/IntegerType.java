@@ -125,7 +125,7 @@ public class IntegerType extends Type {
     public void persistResult(Run run, Output currentOutput, StorageData outputValue) {
         IntegerPersistenceRepository integerPersistenceRepository = AppEngineApplicationContext.getBean(IntegerPersistenceRepository.class);
         IntegerPersistence result = integerPersistenceRepository.findIntegerPersistenceByParameterNameAndRunIdAndParameterType(currentOutput.getName(), run.getId(), ParameterType.OUTPUT);
-        String output = FileHelper.read(outputValue.peek().getData(), getStorageCharset());
+        String output = FileHelper.read(outputValue.firstStorageDataEntry().getData(), getStorageCharset());
         if (result == null) {
             result = new IntegerPersistence();
             result.setValue(Integer.parseInt(output));
@@ -161,7 +161,7 @@ public class IntegerType extends Type {
 
     @Override
     public IntegerValue buildTaskRunParameterValue(StorageData output, UUID id, String outputName) {
-        String outputValue = FileHelper.read(output.poll().getData(), getStorageCharset());
+        String outputValue = FileHelper.read(output.firstStorageDataEntry().getData(), getStorageCharset());
 
         IntegerValue integerValue = new IntegerValue();
         integerValue.setParameterName(outputName);
