@@ -501,8 +501,6 @@ public class TaskProvisioningService {
                 if (currentOutputStorageDataOptional.isPresent()) {
                     currentOutputStorageData = currentOutputStorageDataOptional.get();
                 }
-//                StorageData copyForStorageData = new StorageData(currentOutputStorageData);
-//                StorageData copyForOutputResponse = new StorageData(currentOutputStorageData);
                 // read file
                 String outputName = currentOutput.getName();
                 // saving to database does not care about the type
