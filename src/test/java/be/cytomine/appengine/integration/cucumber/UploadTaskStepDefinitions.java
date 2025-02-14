@@ -1,20 +1,9 @@
 package be.cytomine.appengine.integration.cucumber;
 
-import be.cytomine.appengine.AppEngineApplication;
-import be.cytomine.appengine.dto.handlers.filestorage.Storage;
-import be.cytomine.appengine.dto.responses.errors.ErrorCode;
-import be.cytomine.appengine.dto.responses.errors.ErrorDefinitions;
-import be.cytomine.appengine.exceptions.FileStorageException;
-import be.cytomine.appengine.handlers.StorageHandler;
-import be.cytomine.appengine.handlers.RegistryHandler;
-import be.cytomine.appengine.handlers.StorageData;
-import be.cytomine.appengine.models.task.*;
-import be.cytomine.appengine.openapi.api.DefaultApi;
-import be.cytomine.appengine.openapi.invoker.ApiException;
-import be.cytomine.appengine.openapi.model.TaskDescription;
-import be.cytomine.appengine.repositories.TaskRepository;
-import be.cytomine.appengine.utils.FileHelper;
-import be.cytomine.appengine.utils.TestTaskBuilder;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.IOException;
+import java.util.Objects;
 
 import com.cytomine.registry.client.RegistryClient;
 import com.cytomine.registry.client.http.resp.CatalogResp;
@@ -26,63 +15,69 @@ import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
-
 import org.junit.jupiter.api.Assertions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootContextLoader;
 import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.http.*;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.IOException;
-import java.util.*;
+import be.cytomine.appengine.AppEngineApplication;
+import be.cytomine.appengine.dto.handlers.filestorage.Storage;
+import be.cytomine.appengine.dto.responses.errors.ErrorCode;
+import be.cytomine.appengine.dto.responses.errors.ErrorDefinitions;
+import be.cytomine.appengine.exceptions.FileStorageException;
+import be.cytomine.appengine.handlers.StorageData;
+import be.cytomine.appengine.handlers.StorageHandler;
+import be.cytomine.appengine.models.task.Task;
+import be.cytomine.appengine.openapi.api.DefaultApi;
+import be.cytomine.appengine.openapi.invoker.ApiException;
+import be.cytomine.appengine.openapi.model.TaskDescription;
+import be.cytomine.appengine.repositories.TaskRepository;
+import be.cytomine.appengine.utils.FileHelper;
+import be.cytomine.appengine.utils.TestTaskBuilder;
 
 @ContextConfiguration(classes = AppEngineApplication.class, loader = SpringBootContextLoader.class)
 public class UploadTaskStepDefinitions {
 
-    Logger logger = LoggerFactory.getLogger(UploadTaskStepDefinitions.class);
-
-
     @LocalServerPort
-    String port;
+    private String port;
 
     @Autowired
-    TaskRepository taskRepository;
-
-    ResponseEntity<String> persistedResponse;
-
-    String persistedNamespace;
-    String persistedVersion;
-    Task persistedTask;
-    TaskDescription persistedUploadResponse;
-    ApiException persistedAPIException;
-    private ClassPathResource persistedBundle;
-    private Task uploaded;
+    private DefaultApi appEngineAPI;
 
     @Autowired
-    RegistryHandler dockerRegistryHandler;
-
-    @Value("${registry-client.host}")
-    private String registry;
+    private TaskRepository taskRepository;
 
     @Autowired
-    DefaultApi appEngineAPI;
-
-    @Autowired
-    StorageHandler fileStorageHandler;
+    private StorageHandler fileStorageHandler;
 
     @Value("${app-engine.api_prefix}")
     private String apiPrefix;
 
     @Value("${app-engine.api_version}")
     private String apiVersion;
+
+    @Value("${registry-client.host}")
+    private String registry;
+
+    private String persistedNamespace;
+
+    private String persistedVersion;
+
+    private Task persistedTask;
+
+    private TaskDescription persistedUploadResponse;
+
+    private ApiException persistedAPIException;
+
+    private ClassPathResource persistedBundle;
+
+    private Task uploaded;
 
     @Given("App Engine is up and running")
     public void app_engine_is_up_and_running() {
