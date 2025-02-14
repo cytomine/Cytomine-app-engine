@@ -104,7 +104,9 @@ public class TaskService {
 
         try {
             fileStorageHandler.saveStorageData(
-                storage, new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml"));
+                storage,
+                new StorageData(uploadTaskArchive.getDescriptorFile(), "descriptor.yml")
+            );
             log.info("UploadTask: descriptor.yml is stored in object storage");
         } catch (FileStorageException e) {
             try {
@@ -451,7 +453,7 @@ public class TaskService {
                 + namespace + ":" + version + "} has no inputs");
         }
         log.info("tasks/{namespace}/{version}/runs: retrieved task...");
-        Run run = new Run(taskRunID, TaskRunState.CREATED, task);
+        Run run = new Run(taskRunID, TaskRunState.CREATED, task, String.valueOf(UUID.randomUUID()));
         runRepository.saveAndFlush(run);
         // create a storage for the inputs and outputs
         createRunStorages(taskRunID);
@@ -477,6 +479,7 @@ public class TaskService {
         }
         log.info("tasks/{namespace}/{version}/runs : retrieved task...");
         Run run = new Run(taskRunID, TaskRunState.CREATED, task.get(), LocalDateTime.now());
+        run.setSecret(String.valueOf(UUID.randomUUID()));
         runRepository.saveAndFlush(run);
         // create a storage for the inputs and outputs
         createRunStorages(taskRunID);
