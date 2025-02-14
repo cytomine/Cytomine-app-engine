@@ -54,7 +54,7 @@ public class UploadTaskStepDefinitions {
     private TaskRepository taskRepository;
 
     @Autowired
-    private StorageHandler fileStorageHandler;
+    private StorageHandler storageHandler;
 
     @Value("${app-engine.api_prefix}")
     private String apiPrefix;
@@ -90,7 +90,7 @@ public class UploadTaskStepDefinitions {
     public void file_storage_service_is_up_and_running() throws FileStorageException {
         // ping the file storage service health endpoint and make sure we get no errors
 //      // as long as it responds it means it's up and running
-        fileStorageHandler.checkStorageExists("random");
+        storageHandler.checkStorageExists("random");
     }
 
     @Given("Registry service is up and running")
@@ -174,7 +174,7 @@ public class UploadTaskStepDefinitions {
     public void app_engine_creates_a_task_storage_e_g_a_bucket_reserved_for_the_in_the_file_storage_service_with_a_unique_as_follows(String string, String string2) throws FileStorageException {
         // retrieve from file storage
         String bucketName = uploaded.getStorageReference();
-        boolean found = fileStorageHandler.checkStorageExists(bucketName);
+        boolean found = storageHandler.checkStorageExists(bucketName);
         Assertions.assertTrue(found);
     }
 
@@ -184,7 +184,7 @@ public class UploadTaskStepDefinitions {
         String bucket = uploaded.getStorageReference();
         String object = "descriptor.yml";
         StorageData descriptorFileData = new StorageData(object, bucket);
-        StorageData descriptor = fileStorageHandler.readStorageData(descriptorFileData);
+        StorageData descriptor = storageHandler.readStorageData(descriptorFileData);
         Assertions.assertNotNull(descriptor);
     }
 
@@ -233,8 +233,8 @@ public class UploadTaskStepDefinitions {
         // create bucket
         try {
             Storage storage = new Storage(persistedTask.getStorageReference());
-            if (!fileStorageHandler.checkStorageExists(storage)) {
-                fileStorageHandler.createStorage(storage);
+            if (!storageHandler.checkStorageExists(storage)) {
+                storageHandler.createStorage(storage);
             }
 
             // save file using defined storage reference
@@ -249,7 +249,7 @@ public class UploadTaskStepDefinitions {
                     FileHelper.write("descriptor.yml", mapper.writeValueAsBytes(descriptor)),
                     "descriptor.yml"
                 );
-                fileStorageHandler.saveStorageData(storage, fileData);
+                storageHandler.saveStorageData(storage, fileData);
             }
         } catch (IOException | FileStorageException e) {
             throw new RuntimeException(e);
@@ -281,7 +281,7 @@ public class UploadTaskStepDefinitions {
         // and storage service
         String object = "descriptor.yml";
         StorageData fileData = new StorageData(object, persistedTask.getStorageReference());
-        fileData = fileStorageHandler.readStorageData(fileData);
+        fileData = storageHandler.readStorageData(fileData);
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
         JsonNode descriptor = mapper.readTree(fileData.peek().getData());
 
