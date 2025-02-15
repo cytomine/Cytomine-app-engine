@@ -27,6 +27,7 @@ import be.cytomine.appengine.models.task.ValueType;
 import be.cytomine.appengine.repositories.enumeration.EnumerationPersistenceRepository;
 import be.cytomine.appengine.utils.AppEngineApplicationContext;
 import be.cytomine.appengine.utils.FileHelper;
+import org.apache.logging.log4j.util.Strings;
 
 @SuppressWarnings("checkstyle:LineLength")
 @Data
@@ -47,6 +48,23 @@ public class EnumerationType extends Type {
                 break;
             default:
         }
+    }
+
+    @Override
+    public void validateFiles(
+        Run run,
+        Output currentOutput,
+        StorageData currentOutputStorageData)
+        throws TypeValidationException {
+
+        // validate file structure
+        File outputFile = getFileIfStructureIsValid(currentOutputStorageData);
+
+        // validate value
+        String rawValue = getContentIfValid(outputFile);
+
+        validate(rawValue);
+
     }
 
     @Override

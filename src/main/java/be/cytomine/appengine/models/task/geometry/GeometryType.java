@@ -73,6 +73,23 @@ public class GeometryType extends Type {
     }
 
     @Override
+    public void validateFiles(
+        Run run,
+        Output currentOutput,
+        StorageData currentOutputStorageData)
+        throws TypeValidationException {
+
+        // validate file structure
+        File outputFile = getFileIfStructureIsValid(currentOutputStorageData);
+
+        // validate value
+        String rawValue = getContentIfValid(outputFile);
+
+        validate(rawValue);
+
+    }
+
+    @Override
     public void validate(Object valueObject) throws TypeValidationException {
         if (!(valueObject instanceof String)) {
             throw new TypeValidationException(ErrorCode.INTERNAL_PARAMETER_TYPE_ERROR);
