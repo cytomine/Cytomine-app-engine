@@ -77,8 +77,8 @@ public class TaskProvisioningService {
 
     private final SchedulerHandler schedulerHandler;
 
-    @Value("${storage.temp-path}")
-    private String tempPath;
+//    @Value("${storage.temp-path}")
+//    private String tempPath;
 
     public JsonNode provisionRunParameter(
         String runId,
@@ -464,8 +464,7 @@ public class TaskProvisioningService {
                     parameterZipEntryStorageData = new StorageData(outputName);
                     contentsOfZip.add(parameterZipEntryStorageData);
                 } else {
-                    Files.createDirectories(Path.of(tempPath , run.getId().toString()));
-                    Path tempFile = Files.createFile(Path.of(tempPath , outputName));
+                    Path tempFile = Files.createTempFile(outputName, null);
                     Files.copy(zais, tempFile, StandardCopyOption.REPLACE_EXISTING);
                     parameterZipEntryStorageData = new StorageData(tempFile.toFile(), outputName);
                     contentsOfZip.add(parameterZipEntryStorageData);
