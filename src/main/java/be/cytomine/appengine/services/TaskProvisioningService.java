@@ -25,7 +25,6 @@ import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -76,9 +75,6 @@ public class TaskProvisioningService {
     private final StorageHandler fileStorageHandler;
 
     private final SchedulerHandler schedulerHandler;
-
-//    @Value("${storage.temp-path}")
-//    private String tempPath;
 
     public JsonNode provisionRunParameter(
         String runId,
@@ -406,8 +402,7 @@ public class TaskProvisioningService {
         MultipartFile outputs,
         Set<Output> runTaskOutputs,
         Run run
-    ) throws IOException, ProvisioningException
-    {
+    ) throws IOException, ProvisioningException {
         // read files from the archive
         try (ZipArchiveInputStream zais = new ZipArchiveInputStream(outputs.getInputStream())) {
             log.info("Posting Outputs Archive: unzipped");
@@ -486,7 +481,10 @@ public class TaskProvisioningService {
                     if (storageData.equals(compared)) {
                         continue;
                     }
-                    if (compared.firstStorageDataEntry().getName().startsWith(storageData.firstStorageDataEntry().getName())) {
+                    if (compared
+                        .firstStorageDataEntry()
+                        .getName()
+                        .startsWith(storageData.firstStorageDataEntry().getName())) {
                         storageData.merge(compared);
                         contentsOfZip.remove(compared);
                     }
@@ -500,7 +498,10 @@ public class TaskProvisioningService {
             for (Output currentOutput : remainingUnStoredOutputs) {
                 Optional<StorageData> currentOutputStorageDataOptional = contentsOfZip
                     .stream()
-                    .filter(s -> s.firstStorageDataEntry().getName().equals(currentOutput.getName()))
+                    .filter(s -> s
+                    .firstStorageDataEntry()
+                    .getName()
+                    .equals(currentOutput.getName()))
                     .findFirst();
                 StorageData currentOutputStorageData = null;
                 if (currentOutputStorageDataOptional.isPresent()) {
@@ -509,14 +510,12 @@ public class TaskProvisioningService {
                 // read file
                 String outputName = currentOutput.getName();
                 // validate files/directories contents and structure
-                try
-                {
+                try {
                     validateFiles(run, currentOutput, currentOutputStorageData);
-                } catch (TypeValidationException e)
-                {
+                } catch (TypeValidationException e) {
                     log.info(
                         "ProcessOutputFiles: "
-                            + "output provision is invalid value validation failed"
+                        + "output provision is invalid value validation failed"
                     );
                     ParameterError parameterError = new ParameterError(outputName);
                     AppEngineError error = ErrorBuilder.build(e.getErrorCode(), parameterError);
@@ -547,9 +546,9 @@ public class TaskProvisioningService {
     }
 
     private void validateFiles(Run run, Output currentOutput, StorageData currentOutputStorageData)
-        throws TypeValidationException
-    {
-        log.info("Posting Outputs Archive: validating files and directories contents and structure...");
+        throws TypeValidationException {
+        log.info("Posting Outputs Archive: "
+            + "validating files and directories contents and structure...");
         currentOutput.getType().validateFiles(run, currentOutput, currentOutputStorageData);
         log.info("Posting Outputs Archive: validated finished...");
     }
