@@ -77,8 +77,8 @@ public class TaskProvisioningService {
 
     private final SchedulerHandler schedulerHandler;
 
-    @Value("${storage.input.charset}")
-    private String charset;
+    @Value("${storage.temp-path}")
+    private String tempPath;
 
     public JsonNode provisionRunParameter(
         String runId,
@@ -406,7 +406,8 @@ public class TaskProvisioningService {
         MultipartFile outputs,
         Set<Output> runTaskOutputs,
         Run run
-    ) throws IOException, ProvisioningException {
+    ) throws IOException, ProvisioningException
+    {
         // read files from the archive
         try (ZipArchiveInputStream zais = new ZipArchiveInputStream(outputs.getInputStream())) {
             log.info("Posting Outputs Archive: unzipped");
@@ -463,7 +464,8 @@ public class TaskProvisioningService {
                     parameterZipEntryStorageData = new StorageData(outputName);
                     contentsOfZip.add(parameterZipEntryStorageData);
                 } else {
-                    Path tempFile = Files.createTempFile(outputName, null);
+                    Files.createDirectories(Path.of(tempPath , run.getId().toString()));
+                    Path tempFile = Files.createFile(Path.of(tempPath , outputName));
                     Files.copy(zais, tempFile, StandardCopyOption.REPLACE_EXISTING);
                     parameterZipEntryStorageData = new StorageData(tempFile.toFile(), outputName);
                     contentsOfZip.add(parameterZipEntryStorageData);
@@ -491,6 +493,10 @@ public class TaskProvisioningService {
                     }
                 }
             }
+
+            // prepare error list just in case
+            List<AppEngineError> multipleErrors = new ArrayList<>();
+
             // processing of files
             for (Output currentOutput : remainingUnStoredOutputs) {
                 Optional<StorageData> currentOutputStorageDataOptional = contentsOfZip
@@ -503,6 +509,21 @@ public class TaskProvisioningService {
                 }
                 // read file
                 String outputName = currentOutput.getName();
+                // validate files/directories contents and structure
+                try
+                {
+                    validateFiles(run, currentOutput, currentOutputStorageData);
+                } catch (TypeValidationException e)
+                {
+                    log.info(
+                        "ProcessOutputFiles: "
+                            + "output provision is invalid value validation failed"
+                    );
+                    ParameterError parameterError = new ParameterError(outputName);
+                    AppEngineError error = ErrorBuilder.build(e.getErrorCode(), parameterError);
+                    multipleErrors.add(error);
+                    continue;
+                }
                 // saving to database does not care about the type
                 saveOutput(run, currentOutput, currentOutputStorageData);
                 // saving to the storage does not care about the type
@@ -515,9 +536,23 @@ public class TaskProvisioningService {
                 );
             }
 
+            // throw multiple errors if exist
+            if (!multipleErrors.isEmpty()) {
+                AppEngineError error = ErrorBuilder.buildBatchError(multipleErrors);
+                throw new ProvisioningException(error);
+            }
+
             log.info("Posting Outputs Archive: posted");
             return taskRunParameterValues;
         }
+    }
+
+    private void validateFiles(Run run, Output currentOutput, StorageData currentOutputStorageData)
+        throws TypeValidationException
+    {
+        log.info("Posting Outputs Archive: validating files and directories contents and structure...");
+        currentOutput.getType().validateFiles(run, currentOutput, currentOutputStorageData);
+        log.info("Posting Outputs Archive: validated finished...");
     }
 
     public Charset getStorageCharset(String charset) {
