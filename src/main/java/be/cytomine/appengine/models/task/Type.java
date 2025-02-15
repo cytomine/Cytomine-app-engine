@@ -7,8 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import be.cytomine.appengine.dto.responses.errors.ErrorCode;
-import be.cytomine.appengine.utils.FileHelper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,12 +19,14 @@ import jakarta.persistence.InheritanceType;
 import jakarta.persistence.Table;
 import lombok.Data;
 import lombok.EqualsAndHashCode;
+import org.apache.logging.log4j.util.Strings;
 
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
+import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.exceptions.TypeValidationException;
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.models.BaseEntity;
-import org.apache.logging.log4j.util.Strings;
+import be.cytomine.appengine.utils.FileHelper;
 
 @Entity
 @Table(name = "type")
@@ -107,8 +107,7 @@ public class Type extends BaseEntity {
         throws TypeValidationException {}
 
     public static File getFileIfStructureIsValid(StorageData currentOutputStorageData)
-        throws TypeValidationException
-    {
+        throws TypeValidationException {
         // validate file structure
         File outputFile = currentOutputStorageData.firstStorageDataEntry().getData();
         if (!outputFile.exists()) {
@@ -131,8 +130,7 @@ public class Type extends BaseEntity {
         return outputFile;
     }
 
-    public String getContentIfValid(File outputFile) throws TypeValidationException
-    {
+    public String getContentIfValid(File outputFile) throws TypeValidationException {
         String rawValue = FileHelper.read(outputFile, getStorageCharset());
 
         if (Strings.isBlank(rawValue)) { // not isEmpty()
