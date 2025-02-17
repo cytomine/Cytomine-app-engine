@@ -29,7 +29,6 @@ import be.cytomine.appengine.repositories.TaskRepository;
 import be.cytomine.appengine.exceptions.*;
 import be.cytomine.appengine.utils.ApiClient;
 import be.cytomine.appengine.utils.DescriptorHelper;
-import be.cytomine.appengine.utils.FileHelper;
 import be.cytomine.appengine.utils.TaskTestsUtils;
 import be.cytomine.appengine.utils.TestTaskBuilder;
 
@@ -64,9 +63,7 @@ public class ReadTaskStepDefinitions {
 
     private List<Output> persistedOutputs;
 
-    private File persistedDescriptorFile;
-
-    private File persistedDescriptorYml;
+    private File persistedDescriptor;
 
     private Task persistedTask;
 
@@ -117,24 +114,16 @@ public class ReadTaskStepDefinitions {
     private void createDescriptorInStorage(String bundleFilename, Task task) throws FileStorageException, IOException {
         // save it in file storage service
         Storage storage = new Storage(task.getStorageReference());
-
         if (!storageHandler.checkStorageExists(storage)) {
             storageHandler.createStorage(storage);
         }
 
         // save file using defined storage reference
-        persistedDescriptorFile = TestTaskBuilder.getDescriptorFromBundleResource(bundleFilename);
-        Assertions.assertNotNull(persistedDescriptorFile);
+        persistedDescriptor = TestTaskBuilder.getDescriptorFromBundleResource(bundleFilename);
+        Assertions.assertNotNull(persistedDescriptor);
 
-        try (FileInputStream fis = new FileInputStream(persistedDescriptorFile)) {
-            byte[] fileByteArray = new byte[(int) persistedDescriptorFile.length()];
-            fileByteArray = fis.readAllBytes();
-            StorageData fileData = new StorageData(
-                FileHelper.write("descriptor.yml", fileByteArray),
-                "descriptor.yml"
-            );
-            storageHandler.saveStorageData(storage, fileData);
-        }
+        StorageData fileData = new StorageData(persistedDescriptor, "descriptor.yml");
+        storageHandler.saveStorageData(storage, fileData);
     }
 
     @Given("a valid task has a {string}, a {string} has been successfully uploaded")
@@ -203,11 +192,9 @@ public class ReadTaskStepDefinitions {
         Assertions.assertEquals(persistedInputs.size(), 2);
     }
 
-
     @When("user calls the endpoint {string} with {string} and {string} with HTTP method GET")
     public void user_calls_the_endpoint_with_namespace_and_version_http_method_get(String uri, String namespace, String version) {
         persistedTaskDescription = apiClient.getTask(namespace, version);
-
     }
 
     @When("user calls the endpoint {string} with id {string} HTTP method GET")
@@ -252,7 +239,7 @@ public class ReadTaskStepDefinitions {
 
     @When("user calls the download endpoint with {string} and {string} with HTTP method GET")
     public void user_calls_the_download_endpoint_with_and_with_http_method_get(String namespace, String version) {
-        persistedDescriptorYml = apiClient.getTaskDescriptor(namespace, version);
+        persistedDescriptor = apiClient.getTaskDescriptor(namespace, version);
     }
 
     @Given("the task descriptor is stored in the file storage service in storage {string} under filename {string}")
@@ -260,10 +247,11 @@ public class ReadTaskStepDefinitions {
         // save it in file storage service
         Storage storage = new Storage(persistedTask.getStorageReference());
         Assertions.assertTrue(storageHandler.checkStorageExists(storage));
-        StorageData emptyFile = new StorageData(
-            Files.createTempFile(descriptorFileName, null).toFile(),
-            descriptorFileName
-        );
+
+        File tempFile = Files.createTempFile(descriptorFileName, null).toFile();
+        tempFile.deleteOnExit();
+
+        StorageData emptyFile = new StorageData(tempFile, descriptorFileName);
         emptyFile.peek().setName("descriptor.yml");
         emptyFile.peek().setStorageId(storage.getIdStorage());
         storageHandler.readStorageData(emptyFile);
@@ -272,19 +260,19 @@ public class ReadTaskStepDefinitions {
 
     @When("user calls the download endpoint with {string} with HTTP method GET")
     public void user_calls_the_download_endpoint_with_with_http_method_get(String uuid) {
-        persistedDescriptorYml = apiClient.getTaskDescriptor(uuid);
+        persistedDescriptor = apiClient.getTaskDescriptor(uuid);
     }
 
     @Then("App Engine retrieves the descriptor file {string} from the file storage")
     public void app_engine_retrieves_the_descriptor_file_from_the_file_storage(String fileName) {
         // make sure descriptor is not null
-        Assertions.assertNotNull(persistedDescriptorYml);
+        Assertions.assertNotNull(persistedDescriptor);
     }
 
     @Then("App Engine sends a {string} OK response with the descriptor file as a binary payload \\(see OpenAPI spec)")
     public void app_engine_sends_a_response_with_the_descriptor_file_as_a_binary_payload_see_open_api_spec(String string) throws IOException {
-        Assertions.assertNotNull(persistedDescriptorYml);
-        JsonNode descriptorJson = DescriptorHelper.parseDescriptor(persistedDescriptorYml);
+        Assertions.assertNotNull(persistedDescriptor);
+        JsonNode descriptorJson = DescriptorHelper.parseDescriptor(persistedDescriptor);
         Assertions.assertTrue(descriptorJson.has("namespace"));
         Assertions.assertTrue(descriptorJson.has("version"));
         Assertions.assertEquals(persistedTask.getNamespace(), descriptorJson.get("namespace").textValue());
@@ -313,9 +301,9 @@ public class ReadTaskStepDefinitions {
     public void a_task_unknown_to_the_app_engine_has_a_and_a_and_a(String namespace, String version, String uuid) {
         // just make sure database is empty and doesn't contain the referenced tasks
         taskRepository.deleteAll();
-        this.persistedNamespace = namespace;
-        this.persistedVersion = version;
-        this.persistedUUID = uuid;
+        persistedNamespace = namespace;
+        persistedVersion = version;
+        persistedUUID = uuid;
     }
 
     @When("user calls the fetch endpoint {string} with HTTP method {string}")
@@ -352,7 +340,7 @@ public class ReadTaskStepDefinitions {
                     throw new RuntimeException("Unknown endpoint");
             }
         } catch (RestClientResponseException e) {
-            this.persistedException = e;
+            persistedException = e;
         }
     }
 
