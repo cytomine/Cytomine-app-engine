@@ -4,7 +4,11 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.util.List;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -16,9 +20,11 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import be.cytomine.appengine.dto.inputs.task.GenericParameterProvision;
 import be.cytomine.appengine.dto.inputs.task.TaskDescription;
 import be.cytomine.appengine.dto.inputs.task.TaskInput;
 import be.cytomine.appengine.dto.inputs.task.TaskOutput;
+import be.cytomine.appengine.dto.inputs.task.TaskRun;
 import be.cytomine.appengine.models.task.Input;
 import be.cytomine.appengine.models.task.Output;
 
@@ -74,14 +80,17 @@ public class ApiClient {
     public <T> ResponseEntity<T> postData(String url, Object body, Class<T> responseType) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
         HttpEntity<Object> entity = new HttpEntity<>(body, headers);
 
         return restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
     }
 
-    public <T> ResponseEntity<T> put(String url, Object body, Class<T> responseType) {
-        return restTemplate.exchange(url, HttpMethod.PUT, new HttpEntity<>(body), responseType);
+    public <T> ResponseEntity<T> put(String url, HttpEntity<Object> entity, Class<T> responseType) {
+        return restTemplate.exchange(url, HttpMethod.PUT, entity, responseType);
+    }
+
+    public <T> ResponseEntity<T> put(String url, HttpEntity<Object> entity, ParameterizedTypeReference<T> responseType) {
+        return restTemplate.exchange(url, HttpMethod.PUT, entity, responseType);
     }
 
     public ResponseEntity<String> checkHealth() {
@@ -159,5 +168,52 @@ public class ApiClient {
     public List<Output> getOutputs(String uuid) {
         String url = baseUrl + "/tasks/" + uuid + "/outputs";
         return get(url, new ParameterizedTypeReference<List<Output>>() {}).getBody();
+    }
+
+    public TaskRun createTaskRun(String namespace, String version) {
+        return post(baseUrl + "/tasks/" + namespace + "/" + version + "/runs", null, TaskRun.class).getBody();
+    }
+
+    public TaskRun createTaskRun(String uuid) {
+        return post(baseUrl + "/tasks/" + uuid + "/runs", null, TaskRun.class).getBody();
+    }
+
+    public JsonNode provisionInput(String uuid, String parameterName, String type, String value) {
+        HttpEntity<Object> entity = null;
+        if (type.equals("image") || type.equals("wsi") || type.equals("file")) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+            MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+            ByteArrayResource fileResource = new ByteArrayResource(value.getBytes()) {
+                @Override
+                public String getFilename() {
+                    return "file.txt";
+                }
+            };
+            body.add("file", fileResource);
+
+            entity = new HttpEntity<>(body, headers);
+        } else {
+            ObjectMapper mapper = new ObjectMapper();
+            ObjectNode jsonNode = mapper.valueToTree(
+                TaskTestsUtils.createProvision(parameterName, type, value)
+            );
+
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_JSON);
+
+            entity = new HttpEntity<>(jsonNode, headers);
+        }
+
+        return put(baseUrl + "/task-runs/" + uuid + "/input-provisions/" + parameterName, entity, JsonNode.class).getBody();
+    }
+
+    public List<JsonNode> provisionMultipleInputs(String uuid, List<ObjectNode> body) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+
+        return put(baseUrl + "/task-runs/" + uuid + "/input-provisions", entity, new ParameterizedTypeReference<List<JsonNode>>() {}).getBody();
     }
 }
