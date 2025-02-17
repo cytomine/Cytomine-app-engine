@@ -116,7 +116,7 @@ public class ReadTaskStepDefinitions {
     }
 
     @When("user calls the endpoint {string} \\(excluding version prefix, e.g. {string}) with HTTP method {string}")
-    public void user_calls_the_endpoint_excluding_version_prefix_e_g_with_http_method(String uri, String string2, String method) throws ApiException {
+    public void user_calls_the_endpoint_excluding_version_prefix_e_g_with_http_method(String uri, String string2, String method) {
         tasks = apiClient.getTasks();
     }
 
@@ -264,34 +264,24 @@ public class ReadTaskStepDefinitions {
         Assertions.assertTrue(TaskTestsUtils.areSetEquals(persistedTask.getInputs(), persistedInputs));
     }
 
-
     @When("user calls the endpoint {string} with {string} and {string} HTTP method GET")
-    public void user_calls_the_endpoint_with_and_http_method_get(String endpoint, String namespace, String version) throws ApiException {
-        String endpointUrl = buildAppEngineUrl() + "/tasks/" + namespace + "/" + version + "/inputs";
-        ResponseEntity<List<Input>> response = new RestTemplate().exchange(endpointUrl, HttpMethod.GET, null, new ParameterizedTypeReference<List<Input>>() {});
-        persistedInputs = response.getBody();
+    public void user_calls_the_endpoint_with_and_http_method_get(String endpoint, String namespace, String version) {
+        persistedInputs = apiClient.getInputs(namespace, version);
     }
 
-
     @When("user calls the outputs endpoint {string} with {string} and {string} HTTP method GET")
-    public void user_calls_the_outputs_endpoint_with_and_http_method_get(String endpoint, String namespace, String version) throws ApiException {
-        String endpointUrl = buildAppEngineUrl() + "/tasks/" + namespace + "/" + version + "/outputs";
-        ResponseEntity<List<Output>> response = new RestTemplate().exchange(endpointUrl, HttpMethod.GET, null, new ParameterizedTypeReference<List<Output>>() {});
-        persistedOutputs = response.getBody();
+    public void user_calls_the_outputs_endpoint_with_and_http_method_get(String endpoint, String namespace, String version) {
+        persistedOutputs = apiClient.getOutputs(namespace, version);
     }
 
     @When("user calls the endpoint {string} with {string} HTTP method GET")
-    public void user_calls_the_endpoint_with_http_method_get(String endpoint, String uuid) throws ApiException {
-        String endpointUrl = buildAppEngineUrl() + "/tasks/" + uuid + "/inputs";
-        ResponseEntity<List<Input>> response = new RestTemplate().exchange(endpointUrl, HttpMethod.GET, null, new ParameterizedTypeReference<List<Input>>() {});
-        persistedInputs = response.getBody();
+    public void user_calls_the_endpoint_with_http_method_get(String endpoint, String uuid) {
+        persistedInputs = apiClient.getInputs(uuid);
     }
 
     @When("user calls the outputs endpoint {string} with {string} HTTP method GET")
-    public void user_calls_the_outputs_endpoint_with_http_method_get(String endpoint, String uuid) throws ApiException {
-        String endpointUrl = buildAppEngineUrl() + "/tasks/" + uuid + "/outputs";
-        ResponseEntity<List<Output>> response = new RestTemplate().exchange(endpointUrl, HttpMethod.GET, null, new ParameterizedTypeReference<List<Output>>() {});
-        persistedOutputs = response.getBody();
+    public void user_calls_the_outputs_endpoint_with_http_method_get(String endpoint, String uuid) {
+        persistedOutputs = apiClient.getOutputs(uuid);
     }
 
     @When("user calls the download endpoint with {string} and {string} with HTTP method GET")

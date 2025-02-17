@@ -16,6 +16,8 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import be.cytomine.appengine.dto.inputs.task.TaskDescription;
+import be.cytomine.appengine.models.task.Input;
+import be.cytomine.appengine.models.task.Output;
 
 @Component
 public class ApiClient {
@@ -76,5 +78,25 @@ public class ApiClient {
 
     public List<TaskDescription> getTasks() {
         return get(baseUrl + "/tasks", new ParameterizedTypeReference<List<TaskDescription>>() {}).getBody();
+    }
+
+    public List<Input> getInputs(String namespace, String version) {
+        String url = baseUrl + "/tasks/" + namespace + "/" + version + "/inputs";
+        return get(url, new ParameterizedTypeReference<List<Input>>() {}).getBody();
+    }
+
+    public List<Input> getInputs(String uuid) {
+        String url = baseUrl + "/tasks/" + uuid + "/inputs";
+        return get(url, new ParameterizedTypeReference<List<Input>>() {}).getBody();
+    }
+
+    public List<Output> getOutputs(String namespace, String version) {
+        String url = baseUrl + "/tasks/" + namespace + "/" + version + "/outputs";
+        return get(url, new ParameterizedTypeReference<List<Output>>() {}).getBody();
+    }
+
+    public List<Output> getOutputs(String uuid) {
+        String url = baseUrl + "/tasks/" + uuid + "/outputs";
+        return get(url, new ParameterizedTypeReference<List<Output>>() {}).getBody();
     }
 }
