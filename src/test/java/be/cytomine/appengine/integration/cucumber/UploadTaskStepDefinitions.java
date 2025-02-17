@@ -80,7 +80,7 @@ public class UploadTaskStepDefinitions {
 
     @Before
     public void setUp() {
-        apiClient.setBaseUrl("http://localhost:" + port + "/" + apiPrefix + "/" + apiVersion);
+        apiClient.setBaseUrl("http://localhost:" + port + apiPrefix + apiVersion);
         apiClient.setPort(port);
     }
 
@@ -293,6 +293,7 @@ public class UploadTaskStepDefinitions {
         Assertions.assertNotNull(fileData);
         String shortName = descriptor.get("name_short").textValue();
         Assertions.assertTrue(shortName.equalsIgnoreCase("must_not_have_changed"));
+
         // and registry
         CatalogResp response = RegistryClient.catalog("http://" + registry + ":5000", 2, "");
         boolean repoFound = false;

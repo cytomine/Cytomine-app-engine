@@ -1,5 +1,26 @@
 package be.cytomine.appengine.integration.cucumber;
 
+import java.io.*;
+import java.nio.file.Files;
+import java.util.*;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.jupiter.api.Assertions;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.test.context.SpringBootContextLoader;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.ResponseEntity;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.web.client.RestTemplate;
+
 import be.cytomine.appengine.AppEngineApplication;
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
 import be.cytomine.appengine.handlers.StorageData;
@@ -20,70 +41,60 @@ import be.cytomine.appengine.utils.FileHelper;
 import be.cytomine.appengine.utils.TaskTestsUtils;
 import be.cytomine.appengine.utils.TestTaskBuilder;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
-import org.junit.jupiter.api.Assertions;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.test.context.SpringBootContextLoader;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.web.client.RestTemplate;
-
-import java.io.*;
-import java.nio.file.Files;
-import java.util.*;
-
 @ContextConfiguration(classes = AppEngineApplication.class, loader = SpringBootContextLoader.class)
 public class ReadTaskStepDefinitions {
 
-    Logger logger = LoggerFactory.getLogger(TaskService.class);
-
     @LocalServerPort
-    String port;
+    private String port;
 
     @Autowired
-    TaskRepository taskRepository;
+    private be.cytomine.appengine.utils.ApiClient apiClient;
 
     @Autowired
-    DefaultApi appEngineAPI;
+    private TaskRepository taskRepository;
 
-    ResponseEntity<String> result;
-    private List<TaskDescription> tasks;
-
-    Task persistedTask;
-    TaskDescription persistedTaskDescription;
-    File persistedDescriptorFile;
-    String persistedNamespace;
-    String persistedVersion;
-    String persistedUUID;
-    ApiException persistedException;
-    List<InputParameter> persistedInputParameters;
-    List<OutputParameter> persistedOutputParameters;
-    List<Input> persistedInputs;
-    List<Output> persistedOutputs;
-    File persistedDescriptorYml;
+    @Autowired
+    private DefaultApi appEngineAPI;
 
     @Autowired
     private DefaultApi appEngineApi;
 
     @Autowired
-    StorageHandler fileStorageHandler;
+    private StorageHandler fileStorageHandler;
 
     @Value("${app-engine.api_prefix}")
     private String apiPrefix;
 
     @Value("${app-engine.api_version}")
     private String apiVersion;
+
+    private ResponseEntity<String> result;
+
+    private List<TaskDescription> tasks;
+
+    private Task persistedTask;
+
+    private TaskDescription persistedTaskDescription;
+
+    private File persistedDescriptorFile;
+
+    private String persistedNamespace;
+
+    private String persistedVersion;
+
+    private String persistedUUID;
+
+    private ApiException persistedException;
+
+    private List<InputParameter> persistedInputParameters;
+
+    private List<OutputParameter> persistedOutputParameters;
+
+    private List<Input> persistedInputs;
+
+    private List<Output> persistedOutputs;
+
+    private File persistedDescriptorYml;
 
     private String buildAppEngineUrl() {
         return "http://localhost:" + port + apiPrefix + apiVersion;
@@ -92,7 +103,6 @@ public class ReadTaskStepDefinitions {
     @Given("a set of valid tasks has been successfully uploaded")
     public void a_set_of_valid_tasks_has_been_successfully_uploaded() {
         // generate identifiers for two tasks
-        // generate identifiers
         taskRepository.save(TestTaskBuilder.buildHardcodedAddInteger());
         taskRepository.save(TestTaskBuilder.buildHardcodedSubtractInteger());
     }
@@ -100,10 +110,14 @@ public class ReadTaskStepDefinitions {
     @When("user calls the endpoint {string} \\(excluding version prefix, e.g. {string}) with HTTP method {string}")
     public void user_calls_the_endpoint_excluding_version_prefix_e_g_with_http_method(String uri, String string2, String method) throws ApiException {
         // use rest app engine client to list tasks
+        apiClient.setBaseUrl("http://localhost:" + port + apiPrefix + apiVersion);
+
         ApiClient defaultClient = Configuration.getDefaultApiClient();
         defaultClient.setBasePath(buildAppEngineUrl());
         appEngineApi = new DefaultApi(defaultClient);
         tasks = appEngineApi.getTasks();
+
+        List<be.cytomine.appengine.dto.inputs.task.TaskDescription> t = apiClient.getTasks();
     }
 
     @Then("App Engine retrieves relevant data from the database")
