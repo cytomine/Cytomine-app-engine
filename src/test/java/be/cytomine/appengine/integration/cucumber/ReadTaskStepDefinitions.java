@@ -7,6 +7,8 @@ import java.util.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -23,6 +25,7 @@ import org.springframework.web.client.RestTemplate;
 
 import be.cytomine.appengine.AppEngineApplication;
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
+import be.cytomine.appengine.dto.inputs.task.TaskDescription;
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.handlers.StorageHandler;
 import be.cytomine.appengine.models.task.*;
@@ -32,7 +35,6 @@ import be.cytomine.appengine.openapi.invoker.ApiException;
 import be.cytomine.appengine.openapi.invoker.Configuration;
 import be.cytomine.appengine.openapi.model.InputParameter;
 import be.cytomine.appengine.openapi.model.OutputParameter;
-import be.cytomine.appengine.openapi.model.TaskDescription;
 import be.cytomine.appengine.repositories.TaskRepository;
 import be.cytomine.appengine.services.TaskService;
 import be.cytomine.appengine.exceptions.*;
@@ -74,7 +76,7 @@ public class ReadTaskStepDefinitions {
 
     private Task persistedTask;
 
-    private TaskDescription persistedTaskDescription;
+    private be.cytomine.appengine.openapi.model.TaskDescription persistedTaskDescription;
 
     private File persistedDescriptorFile;
 
@@ -100,6 +102,12 @@ public class ReadTaskStepDefinitions {
         return "http://localhost:" + port + apiPrefix + apiVersion;
     }
 
+    @Before
+    public void setUp() {
+        apiClient.setBaseUrl("http://localhost:" + port + apiPrefix + apiVersion);
+        apiClient.setPort(port);
+    }
+
     @Given("a set of valid tasks has been successfully uploaded")
     public void a_set_of_valid_tasks_has_been_successfully_uploaded() {
         // generate identifiers for two tasks
@@ -109,15 +117,7 @@ public class ReadTaskStepDefinitions {
 
     @When("user calls the endpoint {string} \\(excluding version prefix, e.g. {string}) with HTTP method {string}")
     public void user_calls_the_endpoint_excluding_version_prefix_e_g_with_http_method(String uri, String string2, String method) throws ApiException {
-        // use rest app engine client to list tasks
-        apiClient.setBaseUrl("http://localhost:" + port + apiPrefix + apiVersion);
-
-        ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath(buildAppEngineUrl());
-        appEngineApi = new DefaultApi(defaultClient);
-        tasks = appEngineApi.getTasks();
-
-        List<be.cytomine.appengine.dto.inputs.task.TaskDescription> t = apiClient.getTasks();
+        tasks = apiClient.getTasks();
     }
 
     @Then("App Engine retrieves relevant data from the database")

@@ -1,7 +1,9 @@
 package be.cytomine.appengine.utils;
 
 import java.io.File;
+import java.util.List;
 
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -40,6 +42,10 @@ public class ApiClient {
         return restTemplate.getForEntity(url, responseType);
     }
 
+    public <T> ResponseEntity<T> get(String url, ParameterizedTypeReference<T> responseType) {
+        return restTemplate.exchange(url, HttpMethod.GET, null, responseType);
+    }
+
     public <T> ResponseEntity<T> post(String url, Object body, Class<T> responseType) {
         return restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body), responseType);
     }
@@ -66,5 +72,9 @@ public class ApiClient {
         body.add("task", new FileSystemResource(task));
 
         return postData(baseUrl + "/tasks", body, TaskDescription.class).getBody();
+    }
+
+    public List<TaskDescription> getTasks() {
+        return get(baseUrl + "/tasks", new ParameterizedTypeReference<List<TaskDescription>>() {}).getBody();
     }
 }
