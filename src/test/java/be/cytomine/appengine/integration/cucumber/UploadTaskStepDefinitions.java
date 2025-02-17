@@ -70,7 +70,7 @@ public class UploadTaskStepDefinitions {
 
     private ClassPathResource persistedBundle;
 
-    private RestClientResponseException persistedApiException;
+    private RestClientResponseException persistedException;
 
     private TaskDescription persistedUploadResponse;
 
@@ -149,8 +149,8 @@ public class UploadTaskStepDefinitions {
         } catch (IOException e) {
             Assertions.assertTrue(false, "bundle '" + persistedBundle.getFilename() + "' not found, cannot upload");
         } catch (RestClientResponseException e) {
-            persistedApiException = e;
-            Assertions.assertNotNull(persistedApiException);
+            persistedException = e;
+            Assertions.assertNotNull(persistedException);
         }
     }
 
@@ -211,7 +211,7 @@ public class UploadTaskStepDefinitions {
 
     @Then("App Engine returns an HTTP {string} OK response")
     public void app_engine_returns_an_http_response(String responseCode) {
-        Assertions.assertNull(persistedApiException);
+        Assertions.assertNull(persistedException);
     }
 
     @Then("App Engine cleans up any temporary file created during the process \\(e.g. uploaded zip file, etc)")
@@ -271,8 +271,8 @@ public class UploadTaskStepDefinitions {
     @Then("App Engine returns an HTTP {string} conflict error because this version of the task exists already")
     public void app_engine_returns_an_http_conflict_error_because_this_version_of_the_task_exists_already(String conflictCode) throws JsonProcessingException {
         // failure
-        Assertions.assertEquals(Integer.parseInt(conflictCode), persistedApiException.getStatusCode().value());
-        JsonNode jsonPayLoad = new ObjectMapper().readTree(persistedApiException.getResponseBodyAsString());
+        Assertions.assertEquals(Integer.parseInt(conflictCode), persistedException.getStatusCode().value());
+        JsonNode jsonPayLoad = new ObjectMapper().readTree(persistedException.getResponseBodyAsString());
         // doesn't reply with parsing failure
         Assertions.assertEquals(jsonPayLoad.get("error_code").textValue(), ErrorDefinitions.fromCode(ErrorCode.INTERNAL_TASK_EXISTS).code);
     }
@@ -346,7 +346,7 @@ public class UploadTaskStepDefinitions {
 
     @Then("App Engine returns an HTTP {string} bad request error because the descriptor is incorrectly structured")
     public void app_engine_returns_an_http_bad_request_error_because_the_descriptor_is_incorrectly_structured(String responseCode) {
-        Assertions.assertEquals(400, persistedApiException.getStatusCode().value());
+        Assertions.assertEquals(400, persistedException.getStatusCode().value());
     }
 
     @Then("App Engine fails to validate the task descriptor for task {string} against the descriptor schema")
@@ -363,7 +363,7 @@ public class UploadTaskStepDefinitions {
             default:
                 throw new RuntimeException("invalid test task");
         }
-        JsonNode jsonPayLoad = new ObjectMapper().readTree(persistedApiException.getResponseBodyAsString());
+        JsonNode jsonPayLoad = new ObjectMapper().readTree(persistedException.getResponseBodyAsString());
         Assertions.assertTrue(jsonPayLoad.get("error_code").textValue().equals(ErrorDefinitions.fromCode(code).code));
     }
 }

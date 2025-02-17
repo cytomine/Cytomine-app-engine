@@ -7,7 +7,6 @@ import java.util.*;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -17,11 +16,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootContextLoader;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClientResponseException;
 
 import be.cytomine.appengine.AppEngineApplication;
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
@@ -29,15 +25,9 @@ import be.cytomine.appengine.dto.inputs.task.TaskDescription;
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.handlers.StorageHandler;
 import be.cytomine.appengine.models.task.*;
-import be.cytomine.appengine.openapi.api.DefaultApi;
-import be.cytomine.appengine.openapi.invoker.ApiClient;
-import be.cytomine.appengine.openapi.invoker.ApiException;
-import be.cytomine.appengine.openapi.invoker.Configuration;
-import be.cytomine.appengine.openapi.model.InputParameter;
-import be.cytomine.appengine.openapi.model.OutputParameter;
 import be.cytomine.appengine.repositories.TaskRepository;
-import be.cytomine.appengine.services.TaskService;
 import be.cytomine.appengine.exceptions.*;
+import be.cytomine.appengine.utils.ApiClient;
 import be.cytomine.appengine.utils.DescriptorHelper;
 import be.cytomine.appengine.utils.FileHelper;
 import be.cytomine.appengine.utils.TaskTestsUtils;
@@ -50,16 +40,10 @@ public class ReadTaskStepDefinitions {
     private String port;
 
     @Autowired
-    private be.cytomine.appengine.utils.ApiClient apiClient;
+    private ApiClient apiClient;
 
     @Autowired
     private TaskRepository taskRepository;
-
-    @Autowired
-    private DefaultApi appEngineAPI;
-
-    @Autowired
-    private DefaultApi appEngineApi;
 
     @Autowired
     private StorageHandler storageHandler;
@@ -70,37 +54,27 @@ public class ReadTaskStepDefinitions {
     @Value("${app-engine.api_version}")
     private String apiVersion;
 
-    private ResponseEntity<String> result;
-
-    private List<TaskDescription> tasks;
-
-    private Task persistedTask;
-
-    private be.cytomine.appengine.openapi.model.TaskDescription persistedTaskDescription;
-
-    private File persistedDescriptorFile;
-
     private String persistedNamespace;
 
     private String persistedVersion;
 
     private String persistedUUID;
 
-    private ApiException persistedException;
-
-    private List<InputParameter> persistedInputParameters;
-
-    private List<OutputParameter> persistedOutputParameters;
-
     private List<Input> persistedInputs;
 
     private List<Output> persistedOutputs;
 
+    private File persistedDescriptorFile;
+
     private File persistedDescriptorYml;
 
-    private String buildAppEngineUrl() {
-        return "http://localhost:" + port + apiPrefix + apiVersion;
-    }
+    private Task persistedTask;
+
+    private TaskDescription persistedTaskDescription;
+
+    private List<TaskDescription> tasks;
+
+    private RestClientResponseException persistedException;
 
     @Before
     public void setUp() {
@@ -231,22 +205,14 @@ public class ReadTaskStepDefinitions {
 
 
     @When("user calls the endpoint {string} with {string} and {string} with HTTP method GET")
-    public void user_calls_the_endpoint_with_namespace_and_version_http_method_get(String uri, String namespace, String version) throws ApiException {
-        // call the correct endpoint based on URI
-        ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath(buildAppEngineUrl());
-        appEngineApi = new DefaultApi(defaultClient);
-        persistedTaskDescription = appEngineApi.getTaskByNamespaceVersion(namespace, version);
+    public void user_calls_the_endpoint_with_namespace_and_version_http_method_get(String uri, String namespace, String version) {
+        persistedTaskDescription = apiClient.getTask(namespace, version);
 
     }
 
     @When("user calls the endpoint {string} with id {string} HTTP method GET")
-    public void user_calls_the_endpoint_with_uuid_http_method_get(String uri, String uuid) throws ApiException {
-        // call the correct endpoint based on URI
-        ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath(buildAppEngineUrl());
-        appEngineApi = new DefaultApi(defaultClient);
-        persistedTaskDescription = appEngineApi.getTaskByUUID(UUID.fromString(uuid));
+    public void user_calls_the_endpoint_with_uuid_http_method_get(String uri, String uuid) {
+        persistedTaskDescription = apiClient.getTask(uuid);
     }
 
     @Then("App Engine sends a {string} OK response with a payload containing the task description as a JSON payload \\(see OpenAPI spec)")
@@ -285,13 +251,8 @@ public class ReadTaskStepDefinitions {
     }
 
     @When("user calls the download endpoint with {string} and {string} with HTTP method GET")
-    public void user_calls_the_download_endpoint_with_and_with_http_method_get(String namespace, String version) throws ApiException {
-        // download the descriptor.yml
-        // call the correct endpoint based on URI
-        ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath(buildAppEngineUrl());
-        appEngineApi = new DefaultApi(defaultClient);
-        persistedDescriptorYml = appEngineApi.getTaskDescriptorByNamespaceVersion(namespace, version);
+    public void user_calls_the_download_endpoint_with_and_with_http_method_get(String namespace, String version) {
+        persistedDescriptorYml = apiClient.getTaskDescriptor(namespace, version);
     }
 
     @Given("the task descriptor is stored in the file storage service in storage {string} under filename {string}")
@@ -310,13 +271,8 @@ public class ReadTaskStepDefinitions {
     }
 
     @When("user calls the download endpoint with {string} with HTTP method GET")
-    public void user_calls_the_download_endpoint_with_with_http_method_get(String uuid) throws ApiException {
-        // download the descriptor.yml
-        // call the correct endpoint based on URI
-        ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath(buildAppEngineUrl());
-        appEngineApi = new DefaultApi(defaultClient);
-        persistedDescriptorYml = appEngineApi.getTaskDescriptorByUUID(UUID.fromString(uuid));
+    public void user_calls_the_download_endpoint_with_with_http_method_get(String uuid) {
+        persistedDescriptorYml = apiClient.getTaskDescriptor(uuid);
     }
 
     @Then("App Engine retrieves the descriptor file {string} from the file storage")
@@ -365,41 +321,49 @@ public class ReadTaskStepDefinitions {
     @When("user calls the fetch endpoint {string} with HTTP method {string}")
     public void user_calls_the_fetch_endpoint_excluding_version_prefix_e_g_with_http_method(String endpoint, String method) {
         // call the correct endpoint based on URI
-        ApiClient defaultClient = Configuration.getDefaultApiClient();
-        defaultClient.setBasePath(buildAppEngineUrl());
-        appEngineApi = new DefaultApi(defaultClient);
-        // namespace and version
+
         try {
             switch (endpoint) {
-                case "/task/namespace/version/outputs" ->
-                        persistedOutputParameters = appEngineApi.getTaskOutputsByNamespaceVersion(this.persistedNamespace, this.persistedVersion);
-                case "/task/id/outputs" ->
-                        persistedOutputParameters = appEngineApi.getTaskOutputsByUUID(UUID.fromString(this.persistedUUID));
-                case "/task/namespace/version/inputs" ->
-                        persistedInputParameters = appEngineApi.getTaskInputsByNamespaceVersion(this.persistedNamespace, this.persistedVersion);
-                case "/task/id/inputs" ->
-                        persistedInputParameters = appEngineApi.getTaskInputsByUUID(UUID.fromString(this.persistedUUID));
-                case "/task/namespace/version" ->
-                        persistedTaskDescription = appEngineApi.getTaskByNamespaceVersion(this.persistedNamespace, this.persistedVersion);
-                case "/task/id" -> persistedTaskDescription = appEngineApi.getTaskByUUID(UUID.fromString(this.persistedUUID));
-                case "/task/namespace/version/descriptor.yml" ->
-                        persistedDescriptorYml = appEngineApi.getTaskDescriptorByNamespaceVersion(this.persistedNamespace, this.persistedVersion);
-                case "/task/id/descriptor.yml" ->
-                        persistedDescriptorYml = appEngineApi.getTaskDescriptorByUUID(UUID.fromString(this.persistedUUID));
+                case "/task/namespace/version/outputs":
+                    apiClient.getTaskOutputs(persistedNamespace, persistedVersion);
+                    break;
+                case "/task/id/outputs":
+                    apiClient.getTaskOutputs(persistedUUID);
+                    break;
+                case "/task/namespace/version/inputs":
+                    apiClient.getTaskInputs(persistedNamespace, persistedVersion);
+                    break;
+                case "/task/id/inputs":
+                    apiClient.getTaskInputs(persistedUUID);
+                    break;
+                case "/task/namespace/version":
+                    apiClient.getTask(persistedNamespace, persistedVersion);
+                    break;
+                case "/task/id":
+                    apiClient.getTask(persistedUUID);
+                    break;
+                case "/task/namespace/version/descriptor.yml":
+                    apiClient.getTaskDescriptor(persistedNamespace, persistedVersion);
+                    break;
+                case "/task/id/descriptor.yml":
+                    apiClient.getTaskDescriptor(persistedUUID);
+                    break;
+                default:
+                    throw new RuntimeException("Unknown endpoint");
             }
-        } catch (ApiException e) {
+        } catch (RestClientResponseException e) {
             this.persistedException = e;
         }
     }
 
     @Then("App Engine sends a {string} HTTP error with a standard error payload containing code {string}")
-    public void app_engine_sends_a_http_error(String expResponseCode, String appEngineErrorCode) throws JsonProcessingException {
+    public void app_engine_sends_a_http_error(String expectedStatusCode, String appEngineErrorCode) throws JsonProcessingException {
         // make sure it's a 404 response
-        String actualResponseCode = persistedException.getCode() + "";
-        Assertions.assertEquals(expResponseCode, actualResponseCode);
-        JsonNode jsonPayLoad = new ObjectMapper().readTree(persistedException.getResponseBody());
+        String actualStatusCode = String.valueOf(persistedException.getStatusCode().value());
+        Assertions.assertEquals(expectedStatusCode, actualStatusCode);
+
         // reply with expected error code
+        JsonNode jsonPayLoad = new ObjectMapper().readTree(persistedException.getResponseBodyAsString());
         Assertions.assertTrue(jsonPayLoad.get("error_code").textValue().startsWith(appEngineErrorCode));
     }
-
 }
