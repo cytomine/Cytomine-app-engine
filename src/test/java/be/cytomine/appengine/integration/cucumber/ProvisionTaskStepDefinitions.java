@@ -1,5 +1,31 @@
 package be.cytomine.appengine.integration.cucumber;
 
+import java.nio.charset.StandardCharsets;
+import java.util.*;
+
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
+import io.cucumber.java.en.Given;
+import io.cucumber.java.en.Then;
+import io.cucumber.java.en.When;
+import org.junit.jupiter.api.Assertions;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootContextLoader;
+import org.springframework.boot.test.web.server.LocalServerPort;
+import org.springframework.core.io.ByteArrayResource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
+import org.springframework.test.context.ContextConfiguration;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.RestClientResponseException;
+import org.springframework.web.client.RestTemplate;
+
 import be.cytomine.appengine.AppEngineApplication;
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
 import be.cytomine.appengine.dto.inputs.task.GenericParameterProvision;
@@ -47,34 +73,6 @@ import be.cytomine.appengine.utils.FileHelper;
 import be.cytomine.appengine.utils.TaskTestsUtils;
 import be.cytomine.appengine.utils.TestTaskBuilder;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.node.ObjectNode;
-
-import io.cucumber.java.en.Given;
-import io.cucumber.java.en.Then;
-import io.cucumber.java.en.When;
-
-import org.junit.jupiter.api.Assertions;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootContextLoader;
-import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
-import org.springframework.test.context.ContextConfiguration;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
-import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
-
-import java.nio.charset.StandardCharsets;
-import java.util.*;
-
 @ContextConfiguration(classes = AppEngineApplication.class, loader = SpringBootContextLoader.class)
 public class ProvisionTaskStepDefinitions {
 
@@ -85,7 +83,7 @@ public class ProvisionTaskStepDefinitions {
     private DefaultApi appEngineApi;
 
     @Autowired
-    private StorageHandler fileStorageHandler;
+    private StorageHandler storageHandler;
 
     @Autowired
     private TaskRepository taskRepository;
@@ -196,9 +194,9 @@ public class ProvisionTaskStepDefinitions {
 
     @Then("a storage for the task run is created in the file service under name {string}+UUID")
     public void a_storage_for_the_task_run_is_created_in_the_file_service_under_name(String template) throws FileStorageException {
-        boolean storageExists = fileStorageHandler.checkStorageExists(template + "inputs-" + persistedRun.getId().toString());
+        boolean storageExists = storageHandler.checkStorageExists(template + "inputs-" + persistedRun.getId().toString());
         Assertions.assertTrue(storageExists);
-        storageExists = fileStorageHandler.checkStorageExists(template + "outputs-" + persistedRun.getId().toString());
+        storageExists = storageHandler.checkStorageExists(template + "outputs-" + persistedRun.getId().toString());
         Assertions.assertTrue(storageExists);
     }
 
@@ -249,9 +247,9 @@ public class ProvisionTaskStepDefinitions {
         persistedRun = new Run(UUID.randomUUID(), TaskRunState.CREATED, persistedTask);
         persistedRun = taskRunRepository.saveAndFlush(persistedRun);
         Storage runStorage = new Storage("task-run-inputs-" + persistedRun.getId().toString());
-        fileStorageHandler.createStorage(runStorage);
+        storageHandler.createStorage(runStorage);
         runStorage = new Storage("task-run-outputs-" + persistedRun.getId().toString());
-        fileStorageHandler.createStorage(runStorage);
+        storageHandler.createStorage(runStorage);
     }
 
     @Given("a task run has been created and provisioned with parameter {string} value {string} for this task")
@@ -340,7 +338,7 @@ public class ProvisionTaskStepDefinitions {
 
         persistedRun = taskRunRepository.save(persistedRun);
         Storage runStorage = new Storage("task-run-inputs-" + persistedRun.getId().toString());
-        fileStorageHandler.createStorage(runStorage);
+        storageHandler.createStorage(runStorage);
     }
 
     @Given("this task run has not been provisioned yet and is therefore in state {string}")
@@ -442,7 +440,7 @@ public class ProvisionTaskStepDefinitions {
     @Then("a input file named {string} is created in the task run storage {string}+UUID with content {string}")
     public void a_input_file_named_is_created_in_the_task_run_storage_with_content(String fileName, String template, String content) throws FileStorageException {
         StorageData descriptorMetaData = new StorageData(fileName, template + "inputs-" + persistedRun.getId().toString());
-        StorageData descriptor = fileStorageHandler.readStorageData(descriptorMetaData);
+        StorageData descriptor = storageHandler.readStorageData(descriptorMetaData);
         Assertions.assertNotNull(descriptor);
         String fileContent = FileHelper.read(descriptor.peek().getData(), StandardCharsets.UTF_8);
         Assertions.assertTrue(fileContent.equalsIgnoreCase(content));
@@ -615,7 +613,7 @@ public class ProvisionTaskStepDefinitions {
             fileName
         );
         Storage storage = new Storage(template + "inputs-" + persistedRun.getId().toString());
-        fileStorageHandler.saveStorageData(storage, parameterFile);
+        storageHandler.saveStorageData(storage, parameterFile);
     }
 
     @Given("this task has at least one input parameter {string} of type {string}")
@@ -714,7 +712,7 @@ public class ProvisionTaskStepDefinitions {
     @Then("the input file named {string} is updated in the task run storage {string}+UUID with content {string}")
     public void the_input_file_named_is_updated_in_the_task_run_storage_with_content(String fileName, String template, String content) throws FileStorageException {
         StorageData descriptorMetaData = new StorageData(fileName, template + "inputs-" + persistedRun.getId().toString());
-        StorageData descriptor = fileStorageHandler.readStorageData(descriptorMetaData);
+        StorageData descriptor = storageHandler.readStorageData(descriptorMetaData);
         Assertions.assertNotNull(descriptor);
         String fileContent = FileHelper.read(descriptor.peek().getData(), StandardCharsets.UTF_8);
         Assertions.assertTrue(fileContent.equalsIgnoreCase(content));
