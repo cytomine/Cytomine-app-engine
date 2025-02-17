@@ -2,8 +2,11 @@ package be.cytomine.appengine.utils;
 
 import java.io.File;
 
+import org.springframework.core.io.FileSystemResource;
 import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpMethod;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
@@ -41,6 +44,15 @@ public class ApiClient {
         return restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body), responseType);
     }
 
+    public <T> ResponseEntity<T> postData(String url, Object body, Class<T> responseType) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+
+        HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+
+        return restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
+    }
+
     public <T> ResponseEntity<T> put(String url, Object body, Class<T> responseType) {
         return restTemplate.exchange(url, HttpMethod.PUT, new HttpEntity<>(body), responseType);
     }
@@ -51,8 +63,8 @@ public class ApiClient {
 
     public TaskDescription uploadTask(File task) {
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("task", task);
+        body.add("task", new FileSystemResource(task));
 
-        return post(baseUrl + "/tasks", body, TaskDescription.class).getBody();
+        return postData(baseUrl + "/tasks", body, TaskDescription.class).getBody();
     }
 }

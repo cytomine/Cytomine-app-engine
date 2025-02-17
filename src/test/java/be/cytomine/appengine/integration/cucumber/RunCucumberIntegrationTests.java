@@ -8,7 +8,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 
 @RunWith(Cucumber.class)
 @CucumberOptions(
-    plugin = {"pretty", "html:build/reports/tests/cucumber/cucmber-report.html"},
+    plugin = {"pretty", "html:build/reports/tests/cucumber/cucumber-report.html"},
     features = {"src/test/resources"},
     glue = {"be.cytomine.appengine.integration.cucumber"}
     //,tags = "not @Scheduler"

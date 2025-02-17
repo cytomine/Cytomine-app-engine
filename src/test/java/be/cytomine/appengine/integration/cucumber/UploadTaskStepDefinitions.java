@@ -12,7 +12,6 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
-
 import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
@@ -25,6 +24,7 @@ import org.springframework.boot.test.web.server.LocalServerPort;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
+import org.springframework.web.client.RestClientResponseException;
 
 import be.cytomine.appengine.AppEngineApplication;
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
@@ -35,8 +35,6 @@ import be.cytomine.appengine.exceptions.FileStorageException;
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.handlers.StorageHandler;
 import be.cytomine.appengine.models.task.Task;
-import be.cytomine.appengine.openapi.api.DefaultApi;
-import be.cytomine.appengine.openapi.invoker.ApiException;
 import be.cytomine.appengine.repositories.TaskRepository;
 import be.cytomine.appengine.utils.ApiClient;
 import be.cytomine.appengine.utils.FileHelper;
@@ -52,13 +50,10 @@ public class UploadTaskStepDefinitions {
     private ApiClient apiClient;
 
     @Autowired
-    private DefaultApi appEngineAPI;
+    private StorageHandler storageHandler;
 
     @Autowired
     private TaskRepository taskRepository;
-
-    @Autowired
-    private StorageHandler storageHandler;
 
     @Value("${app-engine.api_prefix}")
     private String apiPrefix;
@@ -73,13 +68,13 @@ public class UploadTaskStepDefinitions {
 
     private String persistedVersion;
 
-    private Task persistedTask;
+    private ClassPathResource persistedBundle;
+
+    private RestClientResponseException persistedApiException;
 
     private TaskDescription persistedUploadResponse;
 
-    private ApiException persistedAPIException;
-
-    private ClassPathResource persistedBundle;
+    private Task persistedTask;
 
     private Task uploaded;
 
@@ -107,7 +102,7 @@ public class UploadTaskStepDefinitions {
     public void registry_service_is_up_and_running() throws IOException {
         try {
             RegistryClient.delete("registry:5000/img@sha256:d53ef00848a227ce64ce71cd7cceb7184fd1f116e0202289b26a576cf87dc4cb");
-        } catch (Exception e) {
+        } catch (IOException e) {
             e.printStackTrace();
         }
     }
@@ -153,12 +148,10 @@ public class UploadTaskStepDefinitions {
             Assertions.assertNotNull(persistedUploadResponse);
         } catch (IOException e) {
             Assertions.assertTrue(false, "bundle '" + persistedBundle.getFilename() + "' not found, cannot upload");
+        } catch (RestClientResponseException e) {
+            persistedApiException = e;
+            Assertions.assertNotNull(persistedApiException);
         }
-
-        // } catch (ApiException e) {
-        //     persistedAPIException = e;
-        //     Assertions.assertNotNull(persistedAPIException);
-        // }
     }
 
     @Then("App Engine unzip the zip archive")
@@ -218,7 +211,7 @@ public class UploadTaskStepDefinitions {
 
     @Then("App Engine returns an HTTP {string} OK response")
     public void app_engine_returns_an_http_response(String responseCode) {
-        Assertions.assertNull(persistedAPIException);
+        Assertions.assertNull(persistedApiException);
     }
 
     @Then("App Engine cleans up any temporary file created during the process \\(e.g. uploaded zip file, etc)")
@@ -278,8 +271,8 @@ public class UploadTaskStepDefinitions {
     @Then("App Engine returns an HTTP {string} conflict error because this version of the task exists already")
     public void app_engine_returns_an_http_conflict_error_because_this_version_of_the_task_exists_already(String conflictCode) throws JsonProcessingException {
         // failure
-        Assertions.assertEquals(Integer.parseInt(conflictCode), persistedAPIException.getCode());
-        JsonNode jsonPayLoad = new ObjectMapper().readTree(persistedAPIException.getMessage());
+        Assertions.assertEquals(Integer.parseInt(conflictCode), persistedApiException.getStatusCode().value());
+        JsonNode jsonPayLoad = new ObjectMapper().readTree(persistedApiException.getResponseBodyAsString());
         // doesn't reply with parsing failure
         Assertions.assertEquals(jsonPayLoad.get("error_code").textValue(), ErrorDefinitions.fromCode(ErrorCode.INTERNAL_TASK_EXISTS).code);
     }
@@ -352,7 +345,7 @@ public class UploadTaskStepDefinitions {
 
     @Then("App Engine returns an HTTP {string} bad request error because the descriptor is incorrectly structured")
     public void app_engine_returns_an_http_bad_request_error_because_the_descriptor_is_incorrectly_structured(String responseCode) {
-        Assertions.assertEquals(400, persistedAPIException.getCode());
+        Assertions.assertEquals(400, persistedApiException.getStatusCode().value());
     }
 
     @Then("App Engine fails to validate the task descriptor for task {string} against the descriptor schema")
@@ -369,7 +362,7 @@ public class UploadTaskStepDefinitions {
             default:
                 throw new RuntimeException("invalid test task");
         }
-        JsonNode jsonPayLoad = new ObjectMapper().readTree(persistedAPIException.getMessage());
+        JsonNode jsonPayLoad = new ObjectMapper().readTree(persistedApiException.getResponseBodyAsString());
         Assertions.assertTrue(jsonPayLoad.get("error_code").textValue().equals(ErrorDefinitions.fromCode(code).code));
     }
 }
