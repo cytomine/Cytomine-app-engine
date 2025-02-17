@@ -62,7 +62,7 @@ public class ReadTaskStepDefinitions {
     private DefaultApi appEngineApi;
 
     @Autowired
-    private StorageHandler fileStorageHandler;
+    private StorageHandler storageHandler;
 
     @Value("${app-engine.api_prefix}")
     private String apiPrefix;
@@ -144,8 +144,8 @@ public class ReadTaskStepDefinitions {
         // save it in file storage service
         Storage storage = new Storage(task.getStorageReference());
 
-        if (!fileStorageHandler.checkStorageExists(storage)) {
-            fileStorageHandler.createStorage(storage);
+        if (!storageHandler.checkStorageExists(storage)) {
+            storageHandler.createStorage(storage);
         }
 
         // save file using defined storage reference
@@ -159,7 +159,7 @@ public class ReadTaskStepDefinitions {
                 FileHelper.write("descriptor.yml", fileByteArray),
                 "descriptor.yml"
             );
-            fileStorageHandler.saveStorageData(storage, fileData);
+            storageHandler.saveStorageData(storage, fileData);
         }
     }
 
@@ -171,8 +171,8 @@ public class ReadTaskStepDefinitions {
         taskRepository.save(persistedTask);
 
         Storage storage = new Storage(persistedTask.getStorageReference());
-        if (fileStorageHandler.checkStorageExists(storage)) {
-            fileStorageHandler.deleteStorage(storage);
+        if (storageHandler.checkStorageExists(storage)) {
+            storageHandler.deleteStorage(storage);
         }
         createDescriptorInStorage(bundleFilename, persistedTask);
     }
@@ -186,8 +186,8 @@ public class ReadTaskStepDefinitions {
 
         // clean storage
         Storage storage = new Storage(persistedTask.getStorageReference());
-        if (fileStorageHandler.checkStorageExists(storage)) {
-            fileStorageHandler.deleteStorage(storage);
+        if (storageHandler.checkStorageExists(storage)) {
+            storageHandler.deleteStorage(storage);
         }
         createDescriptorInStorage(bundleFilename, persistedTask);
     }
@@ -201,8 +201,8 @@ public class ReadTaskStepDefinitions {
 
         // clean storage
         Storage storage = new Storage(persistedTask.getStorageReference());
-        if (fileStorageHandler.checkStorageExists(storage)) {
-            fileStorageHandler.deleteStorage(storage);
+        if (storageHandler.checkStorageExists(storage)) {
+            storageHandler.deleteStorage(storage);
         }
         createDescriptorInStorage(bundleFilename, persistedTask);
     }
@@ -308,14 +308,14 @@ public class ReadTaskStepDefinitions {
     public void the_task_descriptor_is_stored_in_the_file_storage_service_in_storage_under_filename(String storageReference, String descriptorFileName) throws FileStorageException, IOException {
         // save it in file storage service
         Storage storage = new Storage(persistedTask.getStorageReference());
-        Assertions.assertTrue(fileStorageHandler.checkStorageExists(storage));
+        Assertions.assertTrue(storageHandler.checkStorageExists(storage));
         StorageData emptyFile = new StorageData(
             Files.createTempFile(descriptorFileName, null).toFile(),
             descriptorFileName
         );
         emptyFile.peek().setName("descriptor.yml");
         emptyFile.peek().setStorageId(storage.getIdStorage());
-        fileStorageHandler.readStorageData(emptyFile);
+        storageHandler.readStorageData(emptyFile);
         Assertions.assertTrue(Files.size(emptyFile.peek().getData().toPath()) > 0);
     }
 
