@@ -12,6 +12,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
@@ -26,6 +28,7 @@ import org.springframework.test.context.ContextConfiguration;
 
 import be.cytomine.appengine.AppEngineApplication;
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
+import be.cytomine.appengine.dto.inputs.task.TaskDescription;
 import be.cytomine.appengine.dto.responses.errors.ErrorCode;
 import be.cytomine.appengine.dto.responses.errors.ErrorDefinitions;
 import be.cytomine.appengine.exceptions.FileStorageException;
@@ -34,7 +37,6 @@ import be.cytomine.appengine.handlers.StorageHandler;
 import be.cytomine.appengine.models.task.Task;
 import be.cytomine.appengine.openapi.api.DefaultApi;
 import be.cytomine.appengine.openapi.invoker.ApiException;
-import be.cytomine.appengine.openapi.model.TaskDescription;
 import be.cytomine.appengine.repositories.TaskRepository;
 import be.cytomine.appengine.utils.ApiClient;
 import be.cytomine.appengine.utils.FileHelper;
@@ -58,6 +60,12 @@ public class UploadTaskStepDefinitions {
     @Autowired
     private StorageHandler storageHandler;
 
+    @Value("${app-engine.api_prefix}")
+    private String apiPrefix;
+
+    @Value("${app-engine.api_version}")
+    private String apiVersion;
+
     @Value("${registry-client.host}")
     private String registry;
 
@@ -75,10 +83,15 @@ public class UploadTaskStepDefinitions {
 
     private Task uploaded;
 
+    @Before
+    public void setUp() {
+        apiClient.setBaseUrl("http://localhost:" + port + "/" + apiPrefix + "/" + apiVersion);
+        apiClient.setPort(port);
+    }
+
     @Given("App Engine is up and running")
     public void app_engine_is_up_and_running() {
-        String url = "http://localhost:" + port + "/actuator/health";
-        ResponseEntity<String> health = apiClient.get(url, String.class);
+        ResponseEntity<String> health = apiClient.checkHealth();
         Assertions.assertTrue(health.getStatusCode().is2xxSuccessful());
         taskRepository.deleteAll();
     }
@@ -95,6 +108,7 @@ public class UploadTaskStepDefinitions {
         try {
             RegistryClient.delete("registry:5000/img@sha256:d53ef00848a227ce64ce71cd7cceb7184fd1f116e0202289b26a576cf87dc4cb");
         } catch (Exception e) {
+            e.printStackTrace();
         }
     }
 
@@ -107,7 +121,6 @@ public class UploadTaskStepDefinitions {
     @Given("this task identified by an {string} and a {string} is not yet known to the App Engine")
     public void this_task_identified_by_an_and_a_is_not_yet_known_to_the_app_engine(String namespace, String version) {
         taskRepository.deleteAll();
-
     }
 
     @Given("this task is represented by a zip archive containing a task descriptor file and a docker image")
@@ -136,14 +149,16 @@ public class UploadTaskStepDefinitions {
     @When("user calls POST on endpoint with the zip archive as a multipart file parameter")
     public void user_calls_post_on_endpoint_with_the_zip_archive_as_a_multipart_file_parameter() {
         try {
-            persistedUploadResponse = appEngineAPI.uploadTask(persistedBundle.getFile());
+            persistedUploadResponse = apiClient.uploadTask(persistedBundle.getFile());
             Assertions.assertNotNull(persistedUploadResponse);
         } catch (IOException e) {
             Assertions.assertTrue(false, "bundle '" + persistedBundle.getFilename() + "' not found, cannot upload");
-        } catch (ApiException e) {
-            persistedAPIException = e;
-            Assertions.assertNotNull(persistedAPIException);
         }
+
+        // } catch (ApiException e) {
+        //     persistedAPIException = e;
+        //     Assertions.assertNotNull(persistedAPIException);
+        // }
     }
 
     @Then("App Engine unzip the zip archive")
