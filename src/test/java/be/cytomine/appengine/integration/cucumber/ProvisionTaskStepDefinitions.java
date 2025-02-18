@@ -27,23 +27,15 @@ import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.handlers.StorageHandler;
 import be.cytomine.appengine.models.task.*;
 import be.cytomine.appengine.models.task.bool.BooleanPersistence;
-import be.cytomine.appengine.models.task.bool.BooleanType;
 import be.cytomine.appengine.models.task.enumeration.EnumerationPersistence;
-import be.cytomine.appengine.models.task.enumeration.EnumerationType;
 import be.cytomine.appengine.models.task.file.FilePersistence;
-import be.cytomine.appengine.models.task.file.FileType;
 import be.cytomine.appengine.models.task.geometry.GeometryPersistence;
-import be.cytomine.appengine.models.task.geometry.GeometryType;
 import be.cytomine.appengine.models.task.image.ImagePersistence;
-import be.cytomine.appengine.models.task.image.ImageType;
 import be.cytomine.appengine.models.task.integer.IntegerPersistence;
 import be.cytomine.appengine.models.task.integer.IntegerType;
 import be.cytomine.appengine.models.task.number.NumberPersistence;
-import be.cytomine.appengine.models.task.number.NumberType;
 import be.cytomine.appengine.models.task.string.StringPersistence;
-import be.cytomine.appengine.models.task.string.StringType;
 import be.cytomine.appengine.models.task.wsi.WsiPersistence;
-import be.cytomine.appengine.models.task.wsi.WsiType;
 import be.cytomine.appengine.repositories.TypePersistenceRepository;
 import be.cytomine.appengine.repositories.bool.BooleanPersistenceRepository;
 import be.cytomine.appengine.repositories.enumeration.EnumerationPersistenceRepository;
@@ -228,11 +220,11 @@ public class ProvisionTaskStepDefinitions {
         persistedRun = new Run(UUID.randomUUID(), TaskRunState.CREATED, persistedTask);
 
         Input input = persistedTask
-                .getInputs()
-                .stream()
-                .filter(i -> i.getName().equals(parameterName))
-                .findFirst()
-                .orElse(null);
+            .getInputs()
+            .stream()
+            .filter(i -> i.getName().equals(parameterName))
+            .findFirst()
+            .orElse(null);
         Assertions.assertNotNull(input);
 
         TypePersistence provision = new TypePersistence();
@@ -324,11 +316,11 @@ public class ProvisionTaskStepDefinitions {
     @When("a user calls the provisioning endpoint with {string} to provision parameter {string} with {string} of type {string}")
     public void a_user_calls_the_batch_provisioning_endpoint_put_task_runs_input_provisions_with_json_to_provision_parameter_my_input_with(String payload, String parameterName, String value, String type) {
         Input input = persistedTask
-                .getInputs()
-                .stream()
-                .filter(i -> i.getName().equals(parameterName))
-                .findFirst()
-                .orElse(null);
+            .getInputs()
+            .stream()
+            .filter(i -> i.getName().equals(parameterName))
+            .findFirst()
+            .orElse(null);
 
         try {
             apiClient.provisionInput(persistedRun.getId().toString(), parameterName, input == null ? "" : type, value);
@@ -340,11 +332,11 @@ public class ProvisionTaskStepDefinitions {
     @Then("the value {string} is saved and associated parameter {string} in the database")
     public void the_value_is_saved_and_associated_parameter_in_the_database(String value, String parameterName) {
         Input input = persistedTask
-                .getInputs()
-                .stream()
-                .filter(i -> i.getName().equals(parameterName))
-                .findFirst()
-                .orElse(null);
+            .getInputs()
+            .stream()
+            .filter(i -> i.getName().equals(parameterName))
+            .findFirst()
+            .orElse(null);
         Assertions.assertNotNull(input);
 
         TypePersistence provision = null;
@@ -411,13 +403,13 @@ public class ProvisionTaskStepDefinitions {
     @Given("the first parameter is {string} of type {string} without a validation rule")
     public void the_first_parameter_is_of_type_without_a_validation_rule(String parameterName, String type) {
         Assertions.assertTrue(persistedTask.getInputs().stream()
-          .anyMatch(input -> ((IntegerType)input.getType()).getId().equals(type) && input.getName().equals(parameterName)));
+          .anyMatch(input -> input.getType().getId().equals(type) && input.getName().equals(parameterName)));
     }
 
     @Given("the second parameter is {string} of type {string} without a validation rule")
     public void the_second_parameter_is_of_type_without_a_validation_rule(String parameterName, String type) {
         Assertions.assertTrue(persistedTask.getInputs().stream()
-          .anyMatch(input -> ((IntegerType)input.getType()).getId().equals(type) && input.getName().equals(parameterName)));
+          .anyMatch(input -> input.getType().getId().equals(type) && input.getName().equals(parameterName)));
     }
 
     @Given("no validation rules are defined for these parameters")
@@ -434,11 +426,11 @@ public class ProvisionTaskStepDefinitions {
         for (JsonNode parameter : payload) {
             String parameterName = parameter.get("param_name").textValue();
             Input input = persistedTask
-                    .getInputs()
-                    .stream()
-                    .filter(i -> i.getName().equals(parameterName))
-                    .findFirst()
-                    .orElse(null);
+                .getInputs()
+                .stream()
+                .filter(i -> i.getName().equals(parameterName))
+                .findFirst()
+                .orElse(null);
 
             GenericParameterProvision provision = TaskTestsUtils.createProvision(
                 parameterName,
@@ -562,11 +554,11 @@ public class ProvisionTaskStepDefinitions {
         // Check if the set contains an object matching the conditions
         // Will raise an error if the persisted task is not valid with the test
         boolean hasInput = persistedTask
-                .getInputs()
-                .stream()
-                .anyMatch(input -> {
-                    return input.getType().getId().equals(type) && input.getName().equals(paramName);
-                });
+            .getInputs()
+            .stream()
+            .anyMatch(input -> {
+                return input.getType().getId().equals(type) && input.getName().equals(paramName);
+            });
 
         Assertions.assertTrue(hasInput);
     }
@@ -581,11 +573,11 @@ public class ProvisionTaskStepDefinitions {
     @Then("the value of parameter {string} is updated to {string} in the database")
     public void the_value_of_parameter_is_updated_to_in_the_database(String parameterName, String newValue) {
         Input input = persistedTask
-                .getInputs()
-                .stream()
-                .filter(i -> i.getName().equals(parameterName))
-                .findFirst()
-                .orElse(null);
+            .getInputs()
+            .stream()
+            .filter(i -> i.getName().equals(parameterName))
+            .findFirst()
+            .orElse(null);
         Assertions.assertNotNull(input);
 
         TypePersistence provision = null;
