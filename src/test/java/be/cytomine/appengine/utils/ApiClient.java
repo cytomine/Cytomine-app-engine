@@ -95,14 +95,6 @@ public class ApiClient {
         return restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
     }
 
-    public <T> ResponseEntity<T> postData(String url, Object body, ParameterizedTypeReference<T> responseType) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-        HttpEntity<Object> entity = new HttpEntity<>(body, headers);
-
-        return restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
-    }
-
     public <T> ResponseEntity<T> put(String url, HttpEntity<Object> entity, Class<T> responseType) {
         return restTemplate.exchange(url, HttpMethod.PUT, entity, responseType);
     }
@@ -262,12 +254,15 @@ public class ApiClient {
         String url = baseUrl + "/task-runs/" + uuid + "/" + secret + "/outputs.zip";
         MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
         body.add("outputs", new FileSystemResource(outputs));
+        String response = postData(url, body, String.class).getBody();
 
-        return postData(url, body, new ParameterizedTypeReference<List<TaskRunParameterValue>>() {}).getBody();
+        return TaskTestsUtils.convertTo(response);
     }
 
     public List<TaskRunParameterValue> getTaskRunOutputs(String uuid) {
         String url = baseUrl + "/task-runs/" + uuid + "/outputs";
-        return get(url, new ParameterizedTypeReference<List<TaskRunParameterValue>>() {}).getBody();
+        String response = get(url, String.class).getBody();
+
+        return TaskTestsUtils.convertTo(response);
     }
 }
