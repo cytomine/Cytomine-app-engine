@@ -20,12 +20,15 @@ import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
+import be.cytomine.appengine.dto.inputs.task.StateAction;
 import be.cytomine.appengine.dto.inputs.task.TaskDescription;
 import be.cytomine.appengine.dto.inputs.task.TaskInput;
 import be.cytomine.appengine.dto.inputs.task.TaskOutput;
 import be.cytomine.appengine.dto.inputs.task.TaskRun;
+import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.models.task.Input;
 import be.cytomine.appengine.models.task.Output;
+import be.cytomine.appengine.states.TaskRunState;
 
 @Component
 public class ApiClient {
@@ -76,7 +79,23 @@ public class ApiClient {
         return restTemplate.exchange(url, HttpMethod.POST, new HttpEntity<>(body), responseType);
     }
 
+    public <T> ResponseEntity<T> postJson(String url, Object body, Class<T> responseType) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_JSON);
+        HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+
+        return restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
+    }
+
     public <T> ResponseEntity<T> postData(String url, Object body, Class<T> responseType) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
+        HttpEntity<Object> entity = new HttpEntity<>(body, headers);
+
+        return restTemplate.exchange(url, HttpMethod.POST, entity, responseType);
+    }
+
+    public <T> ResponseEntity<T> postData(String url, Object body, ParameterizedTypeReference<T> responseType) {
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.MULTIPART_FORM_DATA);
         HttpEntity<Object> entity = new HttpEntity<>(body, headers);
@@ -220,10 +239,35 @@ public class ApiClient {
         return put(baseUrl + "/task-runs/" + uuid + "/input-provisions", entity, new ParameterizedTypeReference<List<JsonNode>>() {}).getBody();
     }
 
+    public ResponseEntity<StateAction> updateState(String uuid, TaskRunState state) {
+        String body = "{\"desired\": \"" + state.toString() + "\"}";
+        return postJson(baseUrl + "/task-runs/" + uuid + "/state-actions", body, StateAction.class);
+    }
+
+    public File getTaskRunInputsArchive(String uuid) {
+        String url = baseUrl + "/task-runs/" + uuid + "/inputs.zip";
+        byte[] resource = get(url, byte[].class).getBody();
+
+        return writeToFile("inputs-", ".zip", resource);
+    }
+
     public File getTaskRunOutputsArchive(String uuid) {
         String url = baseUrl + "/task-runs/" + uuid + "/outputs.zip";
         byte[] resource = get(url, byte[].class).getBody();
 
         return writeToFile("outputs-", ".zip", resource);
+    }
+
+    public List<TaskRunParameterValue> postTaskRunOutputsArchive(String uuid, String secret, File outputs) {
+        String url = baseUrl + "/task-runs/" + uuid + "/" + secret + "/outputs.zip";
+        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
+        body.add("outputs", new FileSystemResource(outputs));
+
+        return postData(url, body, new ParameterizedTypeReference<List<TaskRunParameterValue>>() {}).getBody();
+    }
+
+    public List<TaskRunParameterValue> getTaskRunOutputs(String uuid) {
+        String url = baseUrl + "/task-runs/" + uuid + "/outputs";
+        return get(url, new ParameterizedTypeReference<List<TaskRunParameterValue>>() {}).getBody();
     }
 }

@@ -2,13 +2,16 @@ package be.cytomine.appengine.integration.cucumber;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.StandardCopyOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.UUID;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -26,22 +29,14 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.test.context.SpringBootContextLoader;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.core.io.FileSystemResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
 
 import be.cytomine.appengine.AppEngineApplication;
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
+import be.cytomine.appengine.dto.inputs.task.StateAction;
 import be.cytomine.appengine.dto.inputs.task.TaskRun;
 import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
 import be.cytomine.appengine.dto.inputs.task.types.integer.IntegerValue;
@@ -102,7 +97,7 @@ public class RunTaskStepDefinitions {
 
     private RestClientResponseException persistedException;
 
-    private ResponseEntity<JsonNode> persistedRunResponse;
+    private ResponseEntity<StateAction> persistedRunResponse;
 
     private List<TaskRunParameterValue> outputs;
 
@@ -142,10 +137,6 @@ public class RunTaskStepDefinitions {
             }
         }
         return formattedPath;
-    }
-
-    private String buildAppEngineUrl() {
-        return "http://localhost:" + port + apiPrefix + apiVersion;
     }
 
     private void createStorage(String uuid) throws FileStorageException {
@@ -221,19 +212,12 @@ public class RunTaskStepDefinitions {
     // successful fetch of task run inputs archive in a launched task run
     @Given("the task run {string} has input parameters: {string} of type {string} with value {string} and {string} of type {string} with value {string}")
     public void the_task_run_has_input_parameters_of_type_with_value_and_of_type_with_value(String runId, String name1, String type1, String value1, String name2, String type2, String value2) throws FileStorageException {
-        String endpointUrl = buildAppEngineUrl() + "/task-runs/" + persistedRun.getId() + "/input-provisions";
-
         ObjectMapper mapper = new ObjectMapper();
         List<ObjectNode> provisions = new ArrayList<>();
         provisions.add(mapper.valueToTree(TaskTestsUtils.createProvision(name1, type1, value1)));
         provisions.add(mapper.valueToTree(TaskTestsUtils.createProvision(name2, type2, value2)));
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-
-        HttpEntity<List<ObjectNode>> entity = new HttpEntity<>(provisions, headers);
-
-        new RestTemplate().exchange(endpointUrl, HttpMethod.PUT, entity, JsonNode.class);
+        apiClient.provisionMultipleInputs(persistedRun.getId().toString(), provisions);
 
         // save inputs in storage
         Storage storage = new Storage("task-run-inputs-" + runId);
@@ -252,29 +236,17 @@ public class RunTaskStepDefinitions {
 
     @When("user calls the endpoint to fetch inputs archive with {string} HTTP method GET")
     public void user_calls_the_endpoint_to_fetch_inputs_archive_with_http_method_get(String runId) {
-        String endpointUrl = buildAppEngineUrl() + "/task-runs/" + runId + "/inputs.zip";
-
         try {
-            ResponseEntity<byte[]> response = new RestTemplate().exchange(endpointUrl, HttpMethod.GET, null, byte[].class);
-            // Write the byte array to a file
-            inputsArchive = File.createTempFile("inputs", ".zip");
-            try (FileOutputStream fos = new FileOutputStream(inputsArchive)) {
-                fos.write(response.getBody());
-            }
+            inputsArchive = apiClient.getTaskRunInputsArchive(runId);
         } catch (RestClientResponseException e) {
             persistedException = e;
-        } catch (IOException e) {
-            e.printStackTrace();
         }
     }
 
     @When("user calls the endpoint to fetch outputs archive with {string} HTTP method GET")
     public void user_calls_the_endpoint_to_fetch_outputs_archive_with_http_method_get(String runId) {
-        String endpointUrl = buildAppEngineUrl() + "/task-runs/" + runId + "/outputs.zip";
-
         try {
-            ResponseEntity<File> response = new RestTemplate().exchange(endpointUrl, HttpMethod.GET, null, new ParameterizedTypeReference<File>() {});
-            outputsArchive = response.getBody();
+            outputsArchive = apiClient.getTaskRunOutputsArchive(runId);
         } catch (RestClientResponseException e) {
             persistedException = e;
         }
@@ -426,11 +398,8 @@ public class RunTaskStepDefinitions {
 
     @When("user calls the endpoint to fetch outputs json with {string} HTTP method GET")
     public void user_calls_the_endpoint_to_fetch_outputs_json_with_http_method_get(String runId) {
-        String endpointUrl = buildAppEngineUrl() + "/task-runs/" + runId + "/outputs";
-
         try {
-            ResponseEntity<String> response = new RestTemplate().getForEntity(endpointUrl, String.class);
-            outputs = TaskTestsUtils.convertTo(response.getBody());
+            outputs = apiClient.getTaskRunOutputs(runId);
         } catch (RestClientResponseException e) {
             persistedException = e;
         }
@@ -466,19 +435,11 @@ public class RunTaskStepDefinitions {
 
     @When("When user calls the endpoint to run task with HTTP method POST")
     public void when_user_calls_the_endpoint_to_run_task_with_http_method_post() {
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_JSON);
-        String runningRequest = "{\"desired\": \"RUNNING\"}";
-        HttpEntity<String> entity = new HttpEntity<>(runningRequest, headers);
-        String endpointUrl = buildAppEngineUrl() + "/task-runs/" + persistedRun.getId() + "/state-actions";
         try {
-            persistedRunResponse = new RestTemplate().exchange(endpointUrl, HttpMethod.POST, entity, JsonNode.class);
+            persistedRunResponse = apiClient.updateState(persistedRun.getId().toString(), TaskRunState.RUNNING);
         } catch (RestClientResponseException e) {
-            e.printStackTrace();
             persistedException = e;
         }
-      
     }
 
     @Then("App Engine sends a {string} Forbidden response with a payload containing the error message \\(see OpenAPI spec) and code {string}")
@@ -562,23 +523,11 @@ public class RunTaskStepDefinitions {
 
     @When("user calls the endpoint to post outputs with {string} HTTP method POST and the zip file as a binary payload")
     public void user_calls_the_endpoint_to_post_outputs_with_http_method_post_and_the_zip_file_as_a_binary_payload(String runId) {
-
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("outputs", new FileSystemResource(persistedZipFile));
-
-        HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(body, headers);
-
-        String endpointUrl = buildAppEngineUrl() + "/task-runs/" + runId + "/" + secret + "/outputs.zip";
         try {
-            ResponseEntity<List<TaskRunParameterValue>> response = new RestTemplate().exchange(endpointUrl, HttpMethod.POST, entity, new ParameterizedTypeReference<List<TaskRunParameterValue>>() {});
-            outputs = response.getBody();
+            outputs = apiClient.postTaskRunOutputsArchive(runId, secret, persistedZipFile);
         } catch (RestClientResponseException e) {
             persistedException = e;
         }
-
     }
 
     @Then("App Engine sends a {string} Bad Request response with a payload containing the error message \\(see OpenAPI spec) and code {string}")
@@ -607,18 +556,8 @@ public class RunTaskStepDefinitions {
         Assertions.assertNotNull(validOutputArchiveResource);
         persistedZipFile = validOutputArchiveResource.getFile();
 
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.MULTIPART_FORM_DATA);
-
-        MultiValueMap<String, Object> body = new LinkedMultiValueMap<>();
-        body.add("outputs", new FileSystemResource(persistedZipFile));
-
-        HttpEntity<MultiValueMap<String, Object>> entity = new HttpEntity<>(body, headers);
-
-        String endpointUrl = buildAppEngineUrl() + "/task-runs/" + runId + "/" + secret + "/outputs.zip";
         try {
-            ResponseEntity<List<TaskRunParameterValue>> response = new RestTemplate().exchange(endpointUrl, HttpMethod.POST, entity, new ParameterizedTypeReference<List<TaskRunParameterValue>>() {});
-            outputs = response.getBody();
+            outputs = apiClient.postTaskRunOutputsArchive(runId, secret, persistedZipFile);
         } catch (RestClientResponseException e) {
             persistedException = e;
         }
