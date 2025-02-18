@@ -17,21 +17,11 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootContextLoader;
 import org.springframework.boot.test.web.server.LocalServerPort;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.ContextConfiguration;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientResponseException;
-import org.springframework.web.client.RestTemplate;
-
 import be.cytomine.appengine.AppEngineApplication;
 import be.cytomine.appengine.dto.handlers.filestorage.Storage;
 import be.cytomine.appengine.dto.inputs.task.GenericParameterProvision;
-import be.cytomine.appengine.dto.inputs.task.TaskRun;
 import be.cytomine.appengine.exceptions.FileStorageException;
 import be.cytomine.appengine.handlers.StorageData;
 import be.cytomine.appengine.handlers.StorageHandler;
@@ -82,13 +72,13 @@ public class ProvisionTaskStepDefinitions {
     private ApiClient apiClient;
 
     @Autowired
+    private RunRepository taskRunRepository;
+
+    @Autowired
     private StorageHandler storageHandler;
 
     @Autowired
     private TaskRepository taskRepository;
-
-    @Autowired
-    private RunRepository taskRunRepository;
 
     @Autowired
     private BooleanPersistenceRepository booleanProvisionRepository;
@@ -132,8 +122,6 @@ public class ProvisionTaskStepDefinitions {
 
     private Task persistedTask;
 
-    private TaskRun taskRun;
-
     @Before
     public void setUp() {
         apiClient.setBaseUrl("http://localhost:" + port + apiPrefix + apiVersion);
@@ -163,10 +151,10 @@ public class ProvisionTaskStepDefinitions {
         try {
             switch (endpoint) {
                 case "/task/namespace/version/runs":
-                    taskRun = apiClient.createTaskRun(persistedTask.getNamespace(), persistedTask.getVersion());
+                    apiClient.createTaskRun(persistedTask.getNamespace(), persistedTask.getVersion());
                     break;
                 case "/task/id/runs":
-                    taskRun = apiClient.createTaskRun(persistedTask.getIdentifier().toString());
+                    apiClient.createTaskRun(persistedTask.getIdentifier().toString());
                     break;
                 default:
                     throw new RuntimeException("Unknown endpoint: " + endpoint);
@@ -199,6 +187,7 @@ public class ProvisionTaskStepDefinitions {
     public void a_storage_for_the_task_run_is_created_in_the_file_service_under_name(String template) throws FileStorageException {
         boolean storageExists = storageHandler.checkStorageExists(template + "inputs-" + persistedRun.getId().toString());
         Assertions.assertTrue(storageExists);
+
         storageExists = storageHandler.checkStorageExists(template + "outputs-" + persistedRun.getId().toString());
         Assertions.assertTrue(storageExists);
     }
@@ -213,28 +202,7 @@ public class ProvisionTaskStepDefinitions {
     @Given("this task has only one input parameter {string} of type {string}")
     public void this_task_has_only_one_input_parameter_of_type(String paramName, String type) {
         persistedTask.getInputs().removeIf(input -> {
-            switch (input.getType().getClass().getSimpleName()) {
-                case "BooleanType":
-                    return !(((BooleanType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
-                case "IntegerType":
-                    return !(((IntegerType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
-                case "NumberType":
-                    return !(((NumberType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
-                case "StringType":
-                    return !(((StringType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
-                case "EnumerationType":
-                    return !(((EnumerationType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
-                case "GeometryType":
-                    return !(((GeometryType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
-                case "ImageType":
-                    return !(((ImageType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
-                case "WsiType":
-                    return !(((WsiType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
-                case "FileType":
-                    return !(((FileType) input.getType()).getId().equals(type) && input.getName().equals(paramName));
-                default:
-                    return false;
-            }
+            return !(input.getType().getId().equals(type) && input.getName().equals(paramName));
         });
         persistedTask = taskRepository.saveAndFlush(persistedTask);
         Assertions.assertEquals(persistedTask.getInputs().size(), 1);
@@ -314,6 +282,8 @@ public class ProvisionTaskStepDefinitions {
                 provision.setValueType(ValueType.FILE);
                 ((FilePersistence) provision).setValue(initialValue.getBytes());
                 break;
+            default:
+                throw new RuntimeException("Unknown type: " + input.getType().getId());
         }
 
         provision.setRunId(persistedRun.getId());
@@ -380,25 +350,25 @@ public class ProvisionTaskStepDefinitions {
         TypePersistence provision = null;
         switch (input.getType().getClass().getSimpleName()) {
             case "BooleanType":
-                provision = booleanProvisionRepository.findBooleanPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
+                provision = booleanProvisionRepository.findBooleanPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
                 break;
             case "IntegerType":
-                provision = integerProvisionRepository.findIntegerPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
+                provision = integerProvisionRepository.findIntegerPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
                 break;
             case "NumberType":
-                provision = numberProvisionRepository.findNumberPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
+                provision = numberProvisionRepository.findNumberPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
                 break;
             case "StringType":
-                provision = stringProvisionRepository.findStringPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
+                provision = stringProvisionRepository.findStringPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
                 break;
             case "EnumerationType":
-                provision = enumerationProvisionRepository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
+                provision = enumerationProvisionRepository.findEnumerationPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
                 break;
             case "GeometryType":
-                provision = geometryProvisionRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
+                provision = geometryProvisionRepository.findGeometryPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
                 break;
             case "ImageType":
-                provision = imageProvisionRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId() , ParameterType.INPUT);
+                provision = imageProvisionRepository.findImagePersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
                 break;
             case "WsiType":
                 provision = wsiPersistenceRepository.findWsiPersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
@@ -406,6 +376,8 @@ public class ProvisionTaskStepDefinitions {
             case "FileType":
                 provision = filePersistenceRepository.findFilePersistenceByParameterNameAndRunIdAndParameterType(parameterName, persistedRun.getId(), ParameterType.INPUT);
                 break;
+            default:
+                throw new RuntimeException("Unknown type: " + input.getType().getId());
         }
 
         Assertions.assertNotNull(provision);
@@ -593,28 +565,7 @@ public class ProvisionTaskStepDefinitions {
                 .getInputs()
                 .stream()
                 .anyMatch(input -> {
-                    switch (type) {
-                        case "boolean":
-                            return ((BooleanType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
-                        case "integer":
-                            return ((IntegerType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
-                        case "number":
-                            return ((NumberType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
-                        case "string":
-                            return ((StringType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
-                        case "enumeration":
-                            return ((EnumerationType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
-                        case "geometry":
-                            return ((GeometryType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
-                        case "image":
-                            return ((ImageType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
-                        case "wsi":
-                            return ((WsiType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
-                        case "file":
-                            return ((FileType) input.getType()).getId().equals(type) && input.getName().equals(paramName);
-                        default:
-                            return false;
-                    }
+                    return input.getType().getId().equals(type) && input.getName().equals(paramName);
                 });
 
         Assertions.assertTrue(hasInput);
