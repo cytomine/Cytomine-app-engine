@@ -36,9 +36,9 @@ public class ApiClient {
 
     private String port;
 
-    private File writeToFile(String filename, byte[] content) {
+    private File writeToFile(String filename, String suffix, byte[] content) {
         try {
-            File tempFile = File.createTempFile(filename, null);
+            File tempFile = File.createTempFile(filename, suffix);
             tempFile.deleteOnExit();
 
             try (FileOutputStream fos = new FileOutputStream(tempFile)) {
@@ -119,14 +119,14 @@ public class ApiClient {
         String url = baseUrl + "/tasks/" + namespace + "/" + version + "/descriptor.yml";
         byte[] resource = get(url, byte[].class).getBody();
 
-        return writeToFile("descriptor-", resource);
+        return writeToFile("descriptor-", null, resource);
     }
 
     public File getTaskDescriptor(String uuid) {
         String url = baseUrl + "/tasks/" + uuid + "/descriptor.yml";
         byte[] resource = get(url, byte[].class).getBody();
 
-        return writeToFile("descriptor-", resource);
+        return writeToFile("descriptor-", null, resource);
     }
 
     public List<TaskInput> getTaskInputs(String namespace, String version) {
@@ -177,6 +177,10 @@ public class ApiClient {
         return post(baseUrl + "/tasks/" + uuid + "/runs", null, TaskRun.class).getBody();
     }
 
+    public TaskRun getTaskRun(String uuid) {
+        return get(baseUrl + "/task-runs/" + uuid, TaskRun.class).getBody();
+    }
+
     public JsonNode provisionInput(String uuid, String parameterName, String type, String value) {
         HttpEntity<Object> entity = null;
         if (type.equals("image") || type.equals("wsi") || type.equals("file")) {
@@ -214,5 +218,12 @@ public class ApiClient {
         HttpEntity<Object> entity = new HttpEntity<>(body, headers);
 
         return put(baseUrl + "/task-runs/" + uuid + "/input-provisions", entity, new ParameterizedTypeReference<List<JsonNode>>() {}).getBody();
+    }
+
+    public File getTaskRunOutputsArchive(String uuid) {
+        String url = baseUrl + "/task-runs/" + uuid + "/outputs.zip";
+        byte[] resource = get(url, byte[].class).getBody();
+
+        return writeToFile("outputs-", ".zip", resource);
     }
 }

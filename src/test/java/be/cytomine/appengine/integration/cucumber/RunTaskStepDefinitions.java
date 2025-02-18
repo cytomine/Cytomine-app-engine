@@ -1,38 +1,26 @@
 package be.cytomine.appengine.integration.cucumber;
 
-import be.cytomine.appengine.AppEngineApplication;
-import be.cytomine.appengine.dto.handlers.filestorage.Storage;
-import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
-import be.cytomine.appengine.dto.inputs.task.types.integer.IntegerValue;
-import be.cytomine.appengine.exceptions.FileStorageException;
-import be.cytomine.appengine.exceptions.SchedulingException;
-import be.cytomine.appengine.handlers.StorageData;
-import be.cytomine.appengine.handlers.SchedulerHandler;
-import be.cytomine.appengine.handlers.StorageHandler;
-import be.cytomine.appengine.models.task.*;
-import be.cytomine.appengine.models.task.integer.IntegerPersistence;
-import be.cytomine.appengine.openapi.api.DefaultApi;
-import be.cytomine.appengine.openapi.invoker.ApiException;
-import be.cytomine.appengine.openapi.model.*;
-import be.cytomine.appengine.repositories.integer.IntegerPersistenceRepository;
-import be.cytomine.appengine.repositories.RunRepository;
-import be.cytomine.appengine.repositories.TaskRepository;
-import be.cytomine.appengine.services.RunService;
-import be.cytomine.appengine.states.TaskRunState;
-import be.cytomine.appengine.utils.FileHelper;
-import be.cytomine.appengine.utils.TaskTestsUtils;
-import be.cytomine.appengine.utils.TestTaskBuilder;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
+import java.util.*;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.node.ObjectNode;
-
+import io.cucumber.java.Before;
 import io.cucumber.java.en.Given;
 import io.cucumber.java.en.Then;
 import io.cucumber.java.en.When;
 import jakarta.validation.constraints.NotNull;
-
 import org.junit.jupiter.api.Assertions;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -52,17 +40,27 @@ import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.RestTemplate;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.nio.charset.Charset;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.StandardCopyOption;
-import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import be.cytomine.appengine.AppEngineApplication;
+import be.cytomine.appengine.dto.handlers.filestorage.Storage;
+import be.cytomine.appengine.dto.inputs.task.TaskRun;
+import be.cytomine.appengine.dto.inputs.task.TaskRunParameterValue;
+import be.cytomine.appengine.dto.inputs.task.types.integer.IntegerValue;
+import be.cytomine.appengine.exceptions.FileStorageException;
+import be.cytomine.appengine.exceptions.SchedulingException;
+import be.cytomine.appengine.handlers.StorageData;
+import be.cytomine.appengine.handlers.SchedulerHandler;
+import be.cytomine.appengine.handlers.StorageHandler;
+import be.cytomine.appengine.models.task.*;
+import be.cytomine.appengine.models.task.integer.IntegerPersistence;
+import be.cytomine.appengine.repositories.integer.IntegerPersistenceRepository;
+import be.cytomine.appengine.repositories.RunRepository;
+import be.cytomine.appengine.repositories.TaskRepository;
+import be.cytomine.appengine.services.RunService;
+import be.cytomine.appengine.states.TaskRunState;
+import be.cytomine.appengine.utils.ApiClient;
+import be.cytomine.appengine.utils.FileHelper;
+import be.cytomine.appengine.utils.TaskTestsUtils;
+import be.cytomine.appengine.utils.TestTaskBuilder;
 
 @ContextConfiguration(classes = AppEngineApplication.class, loader = SpringBootContextLoader.class)
 public class RunTaskStepDefinitions {
@@ -71,10 +69,10 @@ public class RunTaskStepDefinitions {
     private String port;
 
     @Autowired
-    private DefaultApi appEngineApi;
+    private ApiClient apiClient;
 
     @Autowired
-    private StorageHandler fileStorageHandler;
+    private StorageHandler storageHandler;
 
     @Autowired
     private IntegerPersistenceRepository integerPersistenceRepository;
@@ -100,25 +98,29 @@ public class RunTaskStepDefinitions {
     @Value("${storage.input.charset}")
     private String charset;
 
-    private ApiException exception;
+    private String secret;
 
     private RestClientResponseException persistedException;
 
-    private Run persistedRun;
-    private TaskRun persistedTaskRun;
-    private TaskRunStateActionSuccess persistedResponse;
+    private ResponseEntity<JsonNode> persistedRunResponse;
+
     private List<TaskRunParameterValue> outputs;
 
     private File inputsArchive;
+
     private File outputsArchive;
+
     private File persistedZipFile;
+
+    private Run persistedRun;
+
+    private TaskRun persistedTaskRun;
+
     private StorageData param1FileData;
+
     private StorageData param2FileData;
+
     private StorageData outputFileData;
-
-    private String secret;
-
-    private ResponseEntity<JsonNode> persistedRunResponse;
 
     @NotNull
     private static String removeWhitespacesFromPath(File file) {
@@ -148,13 +150,13 @@ public class RunTaskStepDefinitions {
 
     private void createStorage(String uuid) throws FileStorageException {
         Storage inputStorage = new Storage("task-run-inputs-" + uuid);
-        if (!fileStorageHandler.checkStorageExists(inputStorage)) {
-            fileStorageHandler.createStorage(inputStorage);
+        if (!storageHandler.checkStorageExists(inputStorage)) {
+            storageHandler.createStorage(inputStorage);
         }
 
         Storage outputStorage = new Storage("task-run-outputs-" + uuid);
-        if (!fileStorageHandler.checkStorageExists(outputStorage)) {
-            fileStorageHandler.createStorage(outputStorage);
+        if (!storageHandler.checkStorageExists(outputStorage)) {
+            storageHandler.createStorage(outputStorage);
         }
     }
 
@@ -169,11 +171,16 @@ public class RunTaskStepDefinitions {
         };
     }
 
+    @Before
+    public void setUp() {
+        apiClient.setBaseUrl("http://localhost:" + port + apiPrefix + apiVersion);
+        apiClient.setPort(port);
+    }
+
     @Given("Scheduler is up and running")
     public void scheduler_is_up_and_running() throws SchedulingException {
         schedulerHandler.alive();
     }
-
 
     @Given("a task run exists with identifier {string}")
     public void a_task_run_exists_with_identifier(String uuid) throws FileStorageException {
@@ -192,8 +199,8 @@ public class RunTaskStepDefinitions {
     }
 
     @When("user calls the endpoint with {string} HTTP method GET")
-    public void user_calls_the_endpoint_with_http_method_get(String uuid) throws ApiException {
-        persistedTaskRun = appEngineApi.getTaskRun(UUID.fromString(uuid));
+    public void user_calls_the_endpoint_with_http_method_get(String uuid) {
+        persistedTaskRun = apiClient.getTaskRun(uuid);
     }
 
     @Then("App Engine sends a {string} OK response with a payload containing task run information \\(see OpenAPI spec)")
@@ -208,12 +215,12 @@ public class RunTaskStepDefinitions {
 
     @Then("the task run state remains as {string}")
     public void the_task_run_state_remains_as(String state) {
-        Assertions.assertEquals(persistedTaskRun.getState(), be.cytomine.appengine.openapi.model.TaskRunState.valueOf(state));
+        Assertions.assertEquals(persistedTaskRun.getState().toString(), state);
     }
 
     // successful fetch of task run inputs archive in a launched task run
     @Given("the task run {string} has input parameters: {string} of type {string} with value {string} and {string} of type {string} with value {string}")
-    public void the_task_run_has_input_parameters_of_type_with_value_and_of_type_with_value(String runId, String name1, String type1, String value1, String name2, String type2, String value2) throws ApiException, FileStorageException {
+    public void the_task_run_has_input_parameters_of_type_with_value_and_of_type_with_value(String runId, String name1, String type1, String value1, String name2, String type2, String value2) throws FileStorageException {
         String endpointUrl = buildAppEngineUrl() + "/task-runs/" + persistedRun.getId() + "/input-provisions";
 
         ObjectMapper mapper = new ObjectMapper();
@@ -230,17 +237,17 @@ public class RunTaskStepDefinitions {
 
         // save inputs in storage
         Storage storage = new Storage("task-run-inputs-" + runId);
-        fileStorageHandler.createStorage(storage);
+        storageHandler.createStorage(storage);
         StorageData parameterFile = new StorageData(
             FileHelper.write(name1, value1.getBytes(StandardCharsets.UTF_8)),
             name1
         );
-        fileStorageHandler.saveStorageData(storage, parameterFile);
+        storageHandler.saveStorageData(storage, parameterFile);
         parameterFile = new StorageData(
             FileHelper.write(name2, value2.getBytes(StandardCharsets.UTF_8)),
             name2
         );
-        fileStorageHandler.saveStorageData(storage, parameterFile);
+        storageHandler.saveStorageData(storage, parameterFile);
     }
 
     @When("user calls the endpoint to fetch inputs archive with {string} HTTP method GET")
@@ -343,7 +350,7 @@ public class RunTaskStepDefinitions {
 
     // successful fetch of task run outputs archive in a finished task run
     @Given("the task run {string} has output parameters: {string} of type {string} with value {int}")
-    public void the_task_run_has_output_parameters_of_type_with_value_and_of_type_with_value(String runId, String name, String type, Integer value) throws FileStorageException, IOException, ApiException {
+    public void the_task_run_has_output_parameters_of_type_with_value_and_of_type_with_value(String runId, String name, String type, Integer value) throws FileStorageException {
         // Outputs
         integerPersistenceRepository.deleteAll();
         IntegerPersistence result = new IntegerPersistence();
@@ -358,7 +365,7 @@ public class RunTaskStepDefinitions {
 
         if (runId.startsWith("0000")) {
             Storage storage = new Storage("task-run-outputs-" + runId);
-            fileStorageHandler.createStorage(storage);
+            storageHandler.createStorage(storage);
             Storage outputsStorage = new Storage("task-run-outputs-" + persistedRun.getId());
             String valueString = String.valueOf(value);
             byte[] inputFileData = valueString.getBytes(getStorageCharset(charset));
@@ -367,17 +374,16 @@ public class RunTaskStepDefinitions {
                 name
             );
 
-            fileStorageHandler.saveStorageData(outputsStorage, outputFileData);
+            storageHandler.saveStorageData(outputsStorage, outputFileData);
         }
     }
 
     @When("user calls the endpoint to fetch with {string} HTTP method GET")
     public void user_calls_the_endpoint_to_fetch_with_http_method_get(String runId) {
         try {
-            outputsArchive = appEngineApi.getTaskRunOutputsInArchive(UUID.fromString(runId));
-        } catch (ApiException e) {
-            e.printStackTrace();
-            exception = e;
+            outputsArchive = apiClient.getTaskRunOutputsArchive(runId);
+        } catch (RestClientResponseException e) {
+            persistedException = e;
         }
     }
 
@@ -658,7 +664,7 @@ public class RunTaskStepDefinitions {
 
         // store in storage
         Storage runStorage = new Storage("task-run-inputs-" + provisionInputA.getRunId());
-        fileStorageHandler.createStorage(runStorage);
+        storageHandler.createStorage(runStorage);
 
         String value = String.valueOf(provisionInputA.getValue());
         byte[] inputFileData = value.getBytes(getStorageCharset(charset));
@@ -666,7 +672,7 @@ public class RunTaskStepDefinitions {
             FileHelper.write(provisionInputA.getParameterName(), inputFileData),
             provisionInputA.getParameterName()
         );
-        fileStorageHandler.saveStorageData(runStorage, inputProvisionFileData);
+        storageHandler.saveStorageData(runStorage, inputProvisionFileData);
 
         value = String.valueOf(provisionInputB.getValue());
         inputFileData = value.getBytes(getStorageCharset(charset));
@@ -674,7 +680,7 @@ public class RunTaskStepDefinitions {
             FileHelper.write(provisionInputB.getParameterName(), inputFileData),
             provisionInputB.getParameterName()
         );
-        fileStorageHandler.saveStorageData(runStorage, inputProvisionFileData);
+        storageHandler.saveStorageData(runStorage, inputProvisionFileData);
 
         persistedRun.setState(TaskRunState.PROVISIONED);
         persistedRun = runRepository.saveAndFlush(persistedRun);
