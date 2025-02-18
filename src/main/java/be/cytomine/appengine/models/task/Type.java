@@ -109,7 +109,7 @@ public class Type extends BaseEntity {
     public static File getFileIfStructureIsValid(StorageData currentOutputStorageData)
         throws TypeValidationException {
         // validate file structure
-        File outputFile = currentOutputStorageData.firstStorageDataEntry().getData();
+        File outputFile = currentOutputStorageData.peek().getData();
         if (!outputFile.exists()) {
             throw new TypeValidationException(
                 ErrorCode.INTERNAL_MISSING_OUTPUT_FILE_FOR_PARAMETER

@@ -169,7 +169,7 @@ public class TaskController {
     ) throws TaskServiceException, TaskNotFoundException {
         log.info("tasks/{namespace}/{version}/descriptor.yml GET");
         StorageData data = taskService.retrieveYmlDescriptor(namespace, version);
-        File file = data.firstStorageDataEntry().getData();
+        File file = data.peek().getData();
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(
@@ -191,7 +191,7 @@ public class TaskController {
     ) throws TaskServiceException, TaskNotFoundException {
         log.info("tasks/{id}/descriptor.yml GET");
         StorageData data = taskService.retrieveYmlDescriptor(id);
-        File file = data.firstStorageDataEntry().getData();
+        File file = data.peek().getData();
 
         HttpHeaders headers = new HttpHeaders();
         headers.add(

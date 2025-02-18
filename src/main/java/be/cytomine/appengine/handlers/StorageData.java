@@ -54,7 +54,7 @@ public class StorageData {
         entryList = new LinkedList<>();
     }
 
-    public StorageDataEntry firstStorageDataEntry() {
+    public StorageDataEntry peek() {
         return entryList.stream().findFirst().orElse(null);
     }
 

@@ -317,7 +317,7 @@ public class RunTaskStepDefinitions {
         if (paramName.equalsIgnoreCase("a")) {
             testValue = Integer.parseInt(paramValue);
             fileValue = Integer.parseInt(FileHelper.read(
-                param1FileData.firstStorageDataEntry().getData(),
+                param1FileData.peek().getData(),
                 StandardCharsets.UTF_8
             ));
             Assertions.assertEquals(fileValue, testValue);
@@ -325,7 +325,7 @@ public class RunTaskStepDefinitions {
         if (paramName.equalsIgnoreCase("b")) {
             testValue = Integer.parseInt(paramValue);
             fileValue = Integer.parseInt(FileHelper.read(
-                param2FileData.firstStorageDataEntry().getData(),
+                param2FileData.peek().getData(),
                 StandardCharsets.UTF_8
             ));
             Assertions.assertEquals(fileValue, testValue);
@@ -409,7 +409,7 @@ public class RunTaskStepDefinitions {
 
     @Then("the content of output file {string} is {string}")
     public void the_content_of_output_file_is(String outputName, String outputValue) {
-        String value = FileHelper.read(outputFileData.firstStorageDataEntry().getData(), StandardCharsets.UTF_8);
+        String value = FileHelper.read(outputFileData.peek().getData(), StandardCharsets.UTF_8);
         int fileValue = Integer.parseInt(value);
         int testValue = Integer.parseInt(outputValue);
 

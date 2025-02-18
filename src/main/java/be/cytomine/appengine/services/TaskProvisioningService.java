@@ -471,8 +471,8 @@ public class TaskProvisioningService {
             contentsOfZip = contentsOfZip
                 .stream()
                 .sorted((s1, s2) -> Integer.compare(
-                    s2.firstStorageDataEntry().getName().length(),
-                    s1.firstStorageDataEntry().getName().length())
+                    s2.peek().getName().length(),
+                    s1.peek().getName().length())
                 )
                 .toList();
             // merge StorageData objects together
@@ -482,9 +482,9 @@ public class TaskProvisioningService {
                         continue;
                     }
                     if (compared
-                        .firstStorageDataEntry()
+                        .peek()
                         .getName()
-                        .startsWith(storageData.firstStorageDataEntry().getName())) {
+                        .startsWith(storageData.peek().getName())) {
                         storageData.merge(compared);
                         contentsOfZip.remove(compared);
                     }
@@ -499,7 +499,7 @@ public class TaskProvisioningService {
                 Optional<StorageData> currentOutputStorageDataOptional = contentsOfZip
                     .stream()
                     .filter(s -> s
-                    .firstStorageDataEntry()
+                    .peek()
                     .getName()
                     .equals(currentOutput.getName()))
                     .findFirst();
@@ -672,7 +672,7 @@ public class TaskProvisioningService {
         }
 
         log.info("Get IO file from storage: done");
-        return data.firstStorageDataEntry().getData();
+        return data.peek().getData();
     }
 
     private List<TaskRunParameterValue> buildTaskRunParameterValues(Run run, ParameterType type) {

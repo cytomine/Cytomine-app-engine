@@ -34,7 +34,7 @@ public class FileSystemStorageHandler implements StorageHandler {
         Storage storage,
         StorageData storageData
     ) throws FileStorageException {
-        if (storageData.firstStorageDataEntry() == null) {
+        if (storageData.peek() == null) {
             return;
         }
 
@@ -103,12 +103,12 @@ public class FileSystemStorageHandler implements StorageHandler {
 
     @Override
     public void deleteStorageData(StorageData storageData) throws FileStorageException {
-        String fileOrDirName = storageData.firstStorageDataEntry().getName();
-        if (storageData.firstStorageDataEntry().getStorageDataType() == StorageDataType.FILE) {
+        String fileOrDirName = storageData.peek().getName();
+        if (storageData.peek().getStorageDataType() == StorageDataType.FILE) {
             try {
                 Path filePath = Paths.get(
                     basePath,
-                    storageData.firstStorageDataEntry().getStorageId(),
+                    storageData.peek().getStorageId(),
                     fileOrDirName
                 );
                 Files.deleteIfExists(filePath);
@@ -117,7 +117,7 @@ public class FileSystemStorageHandler implements StorageHandler {
             }
         }
 
-        if (storageData.firstStorageDataEntry().getStorageDataType() == StorageDataType.DIRECTORY) {
+        if (storageData.peek().getStorageDataType() == StorageDataType.DIRECTORY) {
             Storage storage = new Storage(fileOrDirName);
             deleteStorage(storage);
         }
@@ -125,7 +125,7 @@ public class FileSystemStorageHandler implements StorageHandler {
 
     @Override
     public StorageData readStorageData(StorageData emptyFile) throws FileStorageException {
-        StorageDataEntry current = emptyFile.firstStorageDataEntry();
+        StorageDataEntry current = emptyFile.peek();
         String filename = current.getName();
         Path filePath = Paths.get(basePath, current.getStorageId(), filename);
         try {

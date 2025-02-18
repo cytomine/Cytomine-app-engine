@@ -288,7 +288,7 @@ public class UploadTaskStepDefinitions {
         StorageData fileData = new StorageData(object, persistedTask.getStorageReference());
         fileData = fileStorageHandler.readStorageData(fileData);
         ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
-        JsonNode descriptor = mapper.readTree(fileData.firstStorageDataEntry().getData());
+        JsonNode descriptor = mapper.readTree(fileData.peek().getData());
 
         Assertions.assertNotNull(fileData);
         String shortName = descriptor.get("name_short").textValue();

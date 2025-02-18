@@ -444,7 +444,7 @@ public class ProvisionTaskStepDefinitions {
         StorageData descriptorMetaData = new StorageData(fileName, template + "inputs-" + persistedRun.getId().toString());
         StorageData descriptor = fileStorageHandler.readStorageData(descriptorMetaData);
         Assertions.assertNotNull(descriptor);
-        String fileContent = FileHelper.read(descriptor.firstStorageDataEntry().getData(), StandardCharsets.UTF_8);
+        String fileContent = FileHelper.read(descriptor.peek().getData(), StandardCharsets.UTF_8);
         Assertions.assertTrue(fileContent.equalsIgnoreCase(content));
     }
 
@@ -716,7 +716,7 @@ public class ProvisionTaskStepDefinitions {
         StorageData descriptorMetaData = new StorageData(fileName, template + "inputs-" + persistedRun.getId().toString());
         StorageData descriptor = fileStorageHandler.readStorageData(descriptorMetaData);
         Assertions.assertNotNull(descriptor);
-        String fileContent = FileHelper.read(descriptor.firstStorageDataEntry().getData(), StandardCharsets.UTF_8);
+        String fileContent = FileHelper.read(descriptor.peek().getData(), StandardCharsets.UTF_8);
         Assertions.assertTrue(fileContent.equalsIgnoreCase(content));
     }
 }

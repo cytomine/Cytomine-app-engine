@@ -299,10 +299,10 @@ public class ReadTaskStepDefinitions {
             Files.createTempFile(descriptorFileName, null).toFile(),
             descriptorFileName
         );
-        emptyFile.firstStorageDataEntry().setName("descriptor.yml");
-        emptyFile.firstStorageDataEntry().setStorageId(storage.getIdStorage());
+        emptyFile.peek().setName("descriptor.yml");
+        emptyFile.peek().setStorageId(storage.getIdStorage());
         fileStorageHandler.readStorageData(emptyFile);
-        Assertions.assertTrue(Files.size(emptyFile.firstStorageDataEntry().getData().toPath()) > 0);
+        Assertions.assertTrue(Files.size(emptyFile.peek().getData().toPath()) > 0);
     }
 
     @When("user calls the download endpoint with {string} with HTTP method GET")
